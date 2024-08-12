@@ -22,6 +22,7 @@ import {
 	MermaidRenderer,
 	MermaidRendererPlugin,
 } from "./ADFProcessingPlugins/MermaidRendererPlugin";
+import { JiraLinkPlugin } from "./ADFProcessingPlugins";
 
 const settingsLoader = new AutoSettingsLoader();
 const settings = settingsLoader.load();
@@ -212,6 +213,17 @@ const markdownTestCases: MarkdownFile[] = [
 			//			"connie-dont-change-parent-page": "invalid",
 		},
 	},
+	{
+		folderName: "jira",
+		absoluteFilePath: "/path/to/jira/file.md",
+		fileName: "file.md",
+		contents: "This here `JIRA:-XYZ-123` is a jira link",
+		pageTitle: "Jira Link Test",
+		frontmatter: {
+			title: "Jira Link Test",
+			description: "A Markdown file with a jira link.",
+		},
+	},
 ];
 
 class TestMermaidRenderer implements MermaidRenderer {
@@ -294,7 +306,10 @@ test("Upload to Confluence", async () => {
 		filesystemAdaptor,
 		publisherSettingsLoader,
 		confluenceClient,
-		[new MermaidRendererPlugin(mermaidRenderer)],
+		[
+			new MermaidRendererPlugin(mermaidRenderer),
+			new JiraLinkPlugin("https://jira.example.com"),
+		],
 	);
 
 	const result = await publisher.publish();

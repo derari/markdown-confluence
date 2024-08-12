@@ -9,6 +9,7 @@ import {
 	FileSystemAdaptor,
 	Publisher,
 	MermaidRendererPlugin,
+	JiraLinkPlugin,
 } from "@markdown-confluence/lib";
 import { PuppeteerMermaidRenderer } from "@markdown-confluence/mermaid-puppeteer-renderer";
 import { ConfluenceClient } from "confluence.js";
@@ -41,6 +42,7 @@ async function main() {
 
 	const publisher = new Publisher(adaptor, settingLoader, confluenceClient, [
 		new MermaidRendererPlugin(new PuppeteerMermaidRenderer()),
+		new JiraLinkPlugin(settings.jiraUrl),
 	]);
 
 	const publishFilter = "";
