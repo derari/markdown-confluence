@@ -6,6 +6,7 @@ import {
 	StaticSettingsLoader,
 	renderADFDoc,
 	MermaidRendererPlugin,
+	JiraLinkPlugin,
 	UploadAdfFileResult,
 } from "@markdown-confluence/lib";
 import { ElectronMermaidRenderer } from "@markdown-confluence/mermaid-electron-renderer";
@@ -97,7 +98,10 @@ export default class ConfluencePlugin extends Plugin {
 			this.adaptor,
 			settingsLoader,
 			confluenceClient,
-			[new MermaidRendererPlugin(mermaidRenderer)],
+			[
+				new MermaidRendererPlugin(mermaidRenderer),
+				new JiraLinkPlugin(this.settings.jiraUrl),
+			],
 		);
 	}
 

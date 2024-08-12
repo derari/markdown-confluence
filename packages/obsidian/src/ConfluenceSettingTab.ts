@@ -120,5 +120,18 @@ export class ConfluenceSettingTab extends PluginSettingTab {
 					});
 				/* eslint-enable @typescript-eslint/naming-convention */
 			});
+
+		new Setting(containerEl)
+			.setName("Jira URL")
+			.setDesc("Base URL of the Jira instance, when linking Jira issues")
+			.addText((text) =>
+				text
+					.setPlaceholder("https://team-23232345645.atlassian.net/")
+					.setValue(this.plugin.settings.jiraUrl)
+					.onChange(async (value) => {
+						this.plugin.settings.jiraUrl = value;
+						await this.plugin.saveSettings();
+					}),
+			);
 	}
 }
