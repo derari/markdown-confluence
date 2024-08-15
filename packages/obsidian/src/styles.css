@@ -1,0 +1,9 @@
+.callout[data-callout="excerpt"] {
+	--callout-color: 128, 128, 128;
+	--callout-icon: lucide-text-select;
+}
+
+.callout[data-callout="properties"] {
+	--callout-color: 128, 128, 128;
+	--callout-icon: lucide-table-properties;
+}

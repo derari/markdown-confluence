@@ -4,6 +4,7 @@ import { defaultSchema } from "@atlaskit/adf-schema/schema-default";
 import { Transformer } from "@atlaskit/editor-common/types";
 import MarkdownIt from "markdown-it";
 import { markdownItTable } from "markdown-it-table";
+// import multimd_table_plugin from "markdown-it-multimd-table";
 import { MarkdownParser } from "prosemirror-markdown";
 import { Schema, Node as PMNode } from "prosemirror-model";
 import { markdownItMedia } from "./media";
@@ -167,6 +168,7 @@ export class MarkdownTransformer implements Transformer<Markdown> {
 		});
 
 		if (schema.nodes["table"]) {
+			// tokenizer.use(multimd_table_plugin);
 			tokenizer.use(markdownItTable);
 		}
 
