@@ -43,11 +43,11 @@
         "markdown-it": "^13.0.1"
     },
     "dependencies": {
-        "@atlaskit/adf-schema": "^25.6.4",
+        "@atlaskit/adf-schema": "^35.2.4",
         "@atlaskit/adf-utils": "^19.0.0",
-        "@atlaskit/editor-common": "^75.5.2",
+        "@atlaskit/editor-common": "^76.27.2",
         "@atlaskit/editor-json-transformer": "^8.10.9",
-        "confluence.js": "^1.6.3",
+        "confluence.js": "^1.7.2",
         "formdata-node": "^5.0.1",
         "glob": "^10.2.7",
         "gray-matter": "^4.0.3",

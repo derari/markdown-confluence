@@ -22,7 +22,7 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 		const promises = charts.map(async (chart) => {
 			const puppeteerLaunchConfig = {
 				executablePath: puppeteer.executablePath(),
-				headless: "new",
+				headless: true,
 				args: [
 					"--ignore-certificate-errors",
 					"--no-sandbox",

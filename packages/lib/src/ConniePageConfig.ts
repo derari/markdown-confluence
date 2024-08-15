@@ -164,6 +164,7 @@ export const conniePerPageConfig: ConfluencePerPageConfig = {
 				}
 
 				const newADF = parseMarkdownToADF(
+					{},
 					frontmatterHeader,
 					settings.confluenceBaseUrl,
 				);

@@ -68,6 +68,8 @@ const panelTypeToAttributesMap: Record<string, [string, string][]> = {
 		["panelIconText", ":wow:"],
 		["panelColor", "#FF8F73"],
 	],
+	excerpt: [["panelType", "excerpt"]],
+	properties: [["panelType", "properties"]],
 };
 
 function getPanelAttributes(calloutType: string): [string, string][] {
