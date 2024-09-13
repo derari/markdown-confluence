@@ -206,9 +206,9 @@ async function ensurePageExists(
 					publish: false,
 					pageId: undefined,
 				});
+			} else {
+				throw error;
 			}
-
-			throw error;
 		}
 	}
 
@@ -227,6 +227,7 @@ async function ensurePageExists(
 	if (currentPage) {
 		if (
 			file.contentType === "page" &&
+			currentPage.id != topPageId &&
 			!currentPage.ancestors?.some((ancestor) => ancestor.id == topPageId)
 		) {
 			throw new Error(
