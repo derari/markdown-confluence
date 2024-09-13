@@ -11,6 +11,7 @@ import { MarkdownToConfluenceCodeBlockLanguageMap } from "./CodeBlockLanguageMap
 import {
 	isSafeUrl,
 	TableCellDefinition,
+	TableDefinition,
 	TableHeaderDefinition,
 	type TableRowDefinition,
 } from "@atlaskit/adf-schema";
@@ -24,6 +25,10 @@ import {
 	tableCell,
 } from "@atlaskit/adf-utils/builders";
 import { ADFEntity } from "@atlaskit/adf-utils/dist/types/types";
+import {
+	TableCell,
+	TableHeader,
+} from "@atlaskit/adf-schema/dist/types/schema/nodes/tableNodes";
 
 const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
 
@@ -112,17 +117,24 @@ function processADF(
 			) {
 				delete node.attrs["isNumberColumnEnabled"];
 			}
+			mergeCells(node as TableDefinition);
 			return node;
 		},
 		tableRow: (node, _parent) => {
 			return node;
 		},
 		tableHeader: (node, _parent) => {
-			node.attrs = { colspan: 1, rowspan: 1, colwidth: [340] };
+			if (!node.attrs) node.attrs = {};
+			if (!node.attrs["colspan"]) node.attrs["colspan"] = 1;
+			if (!node.attrs["rowspan"]) node.attrs["rowspan"] = 1;
+			// if (!node.attrs["colwidth"]) node.attrs["colwidth"] = [340];
 			return node;
 		},
 		tableCell: (node, _parent) => {
-			node.attrs = { colspan: 1, rowspan: 1, colwidth: [340] };
+			if (!node.attrs) node.attrs = {};
+			if (!node.attrs["colspan"]) node.attrs["colspan"] = 1;
+			if (!node.attrs["rowspan"]) node.attrs["rowspan"] = 1;
+			// if (!node.attrs["colwidth"]) node.attrs["colwidth"] = [340];
 			return node;
 		},
 		orderedList: (node, _parent) => {
@@ -431,6 +443,68 @@ function entryAsRow(
 		}
 	});
 	return tableRow(values);
+}
+
+function mergeCells(table: TableDefinition) {
+	console.log("merging cells of " + table);
+	const rows = table.content;
+	for (let rowId = rows.length - 1; rowId >= 0; rowId--) {
+		const row = rows[rowId]!;
+		for (let colId = row.content.length - 1; colId >= 0; colId--) {
+			const cell = row.content[colId]!;
+			if (hasContentString(cell, "^")) {
+				console.log("found ^ at " + rowId + ", " + colId);
+				incrementAttr(table, rowId - 1, colId, cell, "rowspan");
+				row.content.splice(colId, 1);
+			} else if (hasContentString(cell, "<")) {
+				console.log("found < at " + rowId + ", " + colId);
+				incrementAttr(table, rowId, colId - 1, cell, "colspan");
+				row.content.splice(colId, 1);
+			}
+		}
+	}
+}
+
+function hasContentString(node: ADFEntity, expected: string) {
+	let content = node.content;
+	if (content && content.length > 0 && content[0]?.type === "paragraph") {
+		content = content[0].content || [];
+	}
+	if (content && content.length > 0) {
+		const text = content[0]?.text ?? "";
+		return text === expected;
+	}
+	return false;
+}
+
+function incrementAttr(
+	table: TableDefinition,
+	rowId: number,
+	colId: number,
+	src: TableHeader | TableCell,
+	key: "rowspan" | "colspan",
+) {
+	if (rowId < 0 || colId < 0 || rowId >= table.content.length) {
+		return;
+	}
+	console.log("incrementing " + key + " at " + rowId + ", " + colId);
+	const rows = table.content;
+	const row = rows[rowId];
+	if (!row) return;
+	for (const cell of row.content) {
+		if (!cell.attrs) cell.attrs = {};
+		colId -= cell.attrs.colspan || 1;
+		if (colId == -1) {
+			const amount = src.attrs![key] || 1;
+			console.log("incrementing " + cell + " by " + amount);
+			if (!cell.attrs[key]) {
+				cell.attrs[key] = 1 + amount;
+			} else {
+				cell.attrs[key] = (cell.attrs[key] as number) + amount;
+			}
+		}
+		if (colId < 0) return;
+	}
 }
 
 export function convertMDtoADF(
