@@ -141,6 +141,16 @@ function processADF(
 			node.attrs = { order: 1 };
 			return node;
 		},
+		bulletList: (node, _parent) => {
+			if (isTaskList(node.content)) {
+				node.type = "taskList";
+				node.attrs = {};
+				for (const item of node.content!) {
+					listItemToTaskItem(item!);
+				}
+			}
+			return node;
+		},
 		codeBlock: (node, _parent) => {
 			if (!node || !node.attrs) {
 				return;
@@ -505,6 +515,41 @@ function incrementAttr(
 		}
 		if (colId < 0) return;
 	}
+}
+
+function isTaskList(content: Array<ADFEntity | undefined> | undefined) {
+	if (!content) return false;
+	for (const node of content) {
+		if (node?.type !== "listItem") return false;
+		if (node.content) {
+			for (const child of node.content) {
+				if (
+					child?.type === "paragraph" &&
+					child.content &&
+					child.content.length > 0 &&
+					child.content[0]?.text &&
+					child.content[0].text.match(/^\[.?].*/)
+				) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+function listItemToTaskItem(node: ADFEntity) {
+	node.type = "taskItem";
+	const textNode = node.content![0]!.content![0]!;
+	const match = textNode.text!.match(/^\[.?]\s*/)!;
+	textNode.text = textNode.text!.substring(match[0].length);
+	const check = match[0].slice(1, 2);
+	if (check === " " || check == "]") {
+		node.attrs = { state: "TODO" };
+	} else {
+		node.attrs = { state: "DONE" };
+	}
+	node.content = [textNode];
 }
 
 export function convertMDtoADF(
