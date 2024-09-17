@@ -73,34 +73,39 @@ function processADF(
 					.replaceAll(/^\[[*]\]/g, "⭐️");
 			}
 
-			if (
-				!(
-					node.marks &&
-					node.marks[0] &&
-					node.marks[0].type === "link" &&
-					node.marks[0].attrs &&
-					"href" in node.marks[0].attrs
-				)
-			) {
+			if (!(node.marks && node.marks[0])) {
+				return node;
+			}
+
+			const mark = node.marks[0];
+			if (mark.type === "code") {
+				const match = node.text?.match(/\[!!(\w+):(.+)]/);
+				if (!match) return node;
+				return {
+					type: "status",
+					attrs: {
+						text: match[2],
+						color: getBadgeColor(match[1] ?? ""),
+					},
+				};
+			}
+
+			if (!(mark.attrs && "href" in mark.attrs)) {
 				return node;
 			}
 
 			if (
-				node.marks[0].attrs["href"] === "" ||
-				(!isSafeUrl(node.marks[0].attrs["href"]) &&
-					!(node.marks[0].attrs["href"] as string).startsWith(
-						"wikilinks:",
-					) &&
-					!(node.marks[0].attrs["href"] as string).startsWith(
-						"mention:",
-					))
+				mark.attrs["href"] === "" ||
+				(!isSafeUrl(mark.attrs["href"]) &&
+					!(mark.attrs["href"] as string).startsWith("wikilinks:") &&
+					!(mark.attrs["href"] as string).startsWith("mention:"))
 			) {
-				node.marks[0].attrs["href"] = "#";
+				mark.attrs["href"] = "#";
 			}
 
-			if (node.marks[0].attrs["href"] === node.text) {
+			if (mark.attrs["href"] === node.text) {
 				const cleanedUrl = cleanUpUrlIfConfluence(
-					node.marks[0].attrs["href"],
+					mark.attrs["href"],
 					confluenceBaseUrl,
 				);
 				node.type = "inlineCard";
@@ -578,6 +583,40 @@ function listItemToTaskItem(node: ADFEntity) {
 		node.attrs = { state: "DONE" };
 	}
 	node.content = [textNode];
+}
+
+function getBadgeColor(key: string) {
+	switch (key) {
+		case "example":
+		case "hint":
+		case "important":
+		case "tip":
+			return "purple";
+		case "info":
+		case "note":
+		case "todo":
+			return "blue";
+		case "check":
+		case "success":
+		case "done":
+			return "green";
+		case "faq":
+		case "help":
+		case "question":
+		case "attention":
+		case "caution":
+		case "warning":
+			return "yellow";
+		case "bug":
+		case "danger":
+		case "error":
+		case "fail":
+		case "failure":
+		case "missing":
+			return "red";
+		default:
+			return "grey";
+	}
 }
 
 export function convertMDtoADF(
