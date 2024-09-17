@@ -30,6 +30,8 @@ import {
 	TableHeader,
 } from "@atlaskit/adf-schema/dist/types/schema/nodes/tableNodes";
 
+const yaml = require("js-yaml");
+
 const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
 
 const transformer = new MarkdownTransformer();
@@ -182,6 +184,23 @@ function processADF(
 					node = parsedAdf;
 					return node;
 				} catch (e) {
+					return node;
+				}
+			}
+
+			if (codeBlockLanguage === "yaml-table") {
+				if (!node?.content?.at(0)?.text) {
+					return node;
+				}
+				try {
+					const parsedYaml = yaml.load(node?.content?.at(0)?.text);
+					return yamlToTable(
+						parsedYaml,
+						frontmatter,
+						confluenceBaseUrl,
+					);
+				} catch (e) {
+					console.log(e);
 					return node;
 				}
 			}
@@ -380,33 +399,42 @@ function includeFrontmatterTable(
 		data = frontmatter[key];
 	}
 	if (data) {
-		const headerLabels: string[] = [];
-		const headers: TableHeaderDefinition[] = [];
-		// @ts-ignore
-		const rows: TableRowDefinition[] = [tableRow(headers)];
-		const contentRows: TableRowDefinition[] = [];
-
-		if (!Array.isArray(data)) data = [data];
-		// @ts-ignore
-		data.forEach((entry) => {
-			const row = entryAsRow(
-				entry,
-				headerLabels,
-				headers,
-				contentRows,
-				frontmatter,
-				confluenceBaseUrl,
-			);
-			// @ts-ignore
-			rows.push(row);
-			// @ts-ignore
-			contentRows.push(row);
-		});
-		const t = table();
-		t.content = rows;
-		content.push(t);
+		content.push(yamlToTable(data, frontmatter, confluenceBaseUrl));
 	}
 	return key;
+}
+
+function yamlToTable(
+	yaml: unknown,
+	frontmatter: { [p: string]: unknown },
+	confluenceBaseUrl: string,
+) {
+	const headerLabels: string[] = [];
+	const headers: TableHeaderDefinition[] = [];
+	// @ts-ignore
+	const rows: TableRowDefinition[] = [tableRow(headers)];
+	const contentRows: TableRowDefinition[] = [];
+
+	if (!Array.isArray(yaml)) yaml = [yaml];
+	// @ts-ignore
+	yaml.forEach((entry) => {
+		const row = entryAsRow(
+			entry,
+			headerLabels,
+			headers,
+			contentRows,
+			frontmatter,
+			confluenceBaseUrl,
+		);
+		// @ts-ignore
+		rows.push(row);
+		// @ts-ignore
+		contentRows.push(row);
+	});
+	const t = table();
+	t.content = rows;
+	mergeCells(t);
+	return t;
 }
 
 function entryAsRow(
