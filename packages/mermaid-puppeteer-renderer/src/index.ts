@@ -49,24 +49,24 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 				await page.goto(pathToLoad);
 
 				const mermaidConfig = {
-					theme: "base",
-					themeVariables: {
-						background: "#ffffff",
-						mainBkg: "#ddebff",
-						primaryColor: "#ddebff",
-						primaryTextColor: "#192b50",
-						primaryBorderColor: "#0052cc",
-						secondaryColor: "#ff8f73",
-						secondaryTextColor: "#192b50",
-						secondaryBorderColor: "#df360c",
-						tertiaryColor: "#c0b6f3",
-						tertiaryTextColor: "#fefefe",
-						tertiaryBorderColor: "#5243aa",
-						noteBkgColor: "#ffc403",
-						noteTextColor: "#182a4e",
-						textColor: "#ff0000",
-						titleColor: "#0052cc",
-					},
+					theme: "neutral",
+					// themeVariables: {
+					// 	background: "#ffffff",
+					// 	mainBkg: "#ddebff",
+					// 	primaryColor: "#ddebff",
+					// 	primaryTextColor: "#192b50",
+					// 	primaryBorderColor: "#0052cc",
+					// 	secondaryColor: "#ff8f73",
+					// 	secondaryTextColor: "#192b50",
+					// 	secondaryBorderColor: "#df360c",
+					// 	tertiaryColor: "#c0b6f3",
+					// 	tertiaryTextColor: "#fefefe",
+					// 	tertiaryBorderColor: "#5243aa",
+					// 	noteBkgColor: "#ffc403",
+					// 	noteTextColor: "#182a4e",
+					// 	textColor: "#ff0000",
+					// 	titleColor: "#0052cc",
+					// },
 				};
 
 				const result = await page.evaluate(
