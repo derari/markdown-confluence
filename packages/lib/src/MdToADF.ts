@@ -214,6 +214,9 @@ function processADF(
 		},
 		panel: (node, _parent) => {
 			if (!node.attrs) return node;
+			if (node.attrs["panelType"] === "toc") {
+				return calloutAsToc();
+			}
 			if (node.attrs["panelType"] === "excerpt") {
 				return calloutAsExcerpt(node, frontmatter, confluenceBaseUrl);
 			}
@@ -300,6 +303,27 @@ function convertSpecialBlocks(
 	}
 }
 
+function calloutAsToc() {
+	return {
+		type: "extension",
+		attrs: {
+			layout: "default",
+			extensionType: "com.atlassian.confluence.macro.core",
+			extensionKey: "toc",
+			parameters: {
+				macroParams: {
+					style: {
+						value: "default",
+					},
+				},
+				macroMetadata: {
+					title: "Table of Contents",
+				},
+			},
+		},
+	};
+}
+
 function calloutAsExcerpt(
 	node: ADFEntity,
 	frontmatter: { [p: string]: unknown },
@@ -321,7 +345,7 @@ function calloutAsExcerpt(
 function asExcerptNode(node: ADFEntity, name: string) {
 	node.type = "bodiedExtension";
 	node.attrs = {
-		layout: "default",
+		layout: "full-width",
 		extensionType: "com.atlassian.confluence.macro.core",
 		extensionKey: "excerpt",
 		parameters: {
@@ -453,6 +477,7 @@ function entryAsRow(
 	const values: TableCellDefinition[] = [];
 	for (const k of Object.keys(data)) {
 		if (!headerLabels.includes(k)) {
+			console.log("column " + headerLabels.length + " =" + k);
 			headerLabels.push(k);
 			const th = tableHeader({})(p(""));
 			// @ts-ignore
@@ -489,7 +514,6 @@ function entryAsRow(
 }
 
 function mergeCells(table: TableDefinition) {
-	console.log("merging cells of " + table);
 	const rows = table.content;
 	for (let rowId = rows.length - 1; rowId >= 0; rowId--) {
 		const row = rows[rowId]!;
@@ -539,7 +563,6 @@ function incrementAttr(
 		colId -= cell.attrs.colspan || 1;
 		if (colId == -1) {
 			const amount = src.attrs![key] || 1;
-			console.log("incrementing " + cell + " by " + amount);
 			if (!cell.attrs[key]) {
 				cell.attrs[key] = 1 + amount;
 			} else {

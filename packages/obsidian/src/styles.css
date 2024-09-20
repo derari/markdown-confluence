@@ -7,3 +7,8 @@
 	--callout-color: 128, 128, 128;
 	--callout-icon: lucide-table-properties;
 }
+
+.callout[data-callout="toc"] {
+	--callout-color: 128, 128, 128;
+	--callout-icon: lucide-table-of-contents;
+}
