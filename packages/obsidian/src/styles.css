@@ -10,5 +10,5 @@
 
 .callout[data-callout="toc"] {
 	--callout-color: 128, 128, 128;
-	--callout-icon: lucide-table-of-contents;
+	--callout-icon: lucide-list-tree;
 }
