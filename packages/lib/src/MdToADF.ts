@@ -168,7 +168,9 @@ function processADF(
 				return node;
 			}
 
-			const codeBlockLanguage = (node.attrs || {})?.["language"];
+			const codeBlockLanguage = (node.attrs || {})?.[
+				"language"
+			] as string;
 
 			if (codeBlockLanguage in MarkdownToConfluenceCodeBlockLanguageMap) {
 				node.attrs["language"] =
@@ -193,7 +195,10 @@ function processADF(
 				}
 			}
 
-			if (codeBlockLanguage === "yaml-table") {
+			if (
+				codeBlockLanguage.startsWith("yaml-table") ||
+				codeBlockLanguage.startsWith("yaml table")
+			) {
 				if (!node?.content?.at(0)?.text) {
 					return node;
 				}
@@ -345,7 +350,7 @@ function calloutAsExcerpt(
 function asExcerptNode(node: ADFEntity, name: string) {
 	node.type = "bodiedExtension";
 	node.attrs = {
-		layout: "full-width",
+		layout: "default",
 		extensionType: "com.atlassian.confluence.macro.core",
 		extensionKey: "excerpt",
 		parameters: {
@@ -477,7 +482,7 @@ function entryAsRow(
 	const values: TableCellDefinition[] = [];
 	for (const k of Object.keys(data)) {
 		if (!headerLabels.includes(k)) {
-			console.log("column " + headerLabels.length + " =" + k);
+			console.log("column " + headerLabels.length + " = " + k);
 			headerLabels.push(k);
 			const th = tableHeader({})(p(""));
 			// @ts-ignore
