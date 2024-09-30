@@ -98,6 +98,7 @@ export class Publisher {
 	private myAccountId: string | undefined;
 	private settingsLoader: SettingsLoader;
 	private adfProcessingPlugins: ADFProcessingPlugin<unknown, unknown>[];
+	private updateableUsers: string[] = [];
 
 	constructor(
 		adaptor: LoaderAdaptor,
@@ -122,6 +123,8 @@ export class Publisher {
 				await this.confluenceClient.users.getCurrentUser();
 			this.myAccountId = currentUser.accountId;
 		}
+
+		this.updateableUsers = settings.updateableUsers;
 
 		const parentPage = await this.confluenceClient.content.getContentById({
 			id: settings.confluenceParentId,
@@ -197,7 +200,10 @@ export class Publisher {
 		adfFile: ConfluenceAdfFile,
 		lastUpdatedBy: string,
 	): Promise<UploadAdfFileResult> {
-		if (lastUpdatedBy !== this.myAccountId) {
+		if (
+			lastUpdatedBy !== this.myAccountId &&
+			!this.updateableUsers.includes(lastUpdatedBy)
+		) {
 			throw new Error(
 				`Page last updated by another user. Won't publish over their changes. MyAccountId: ${this.myAccountId}, Last Updated By: ${lastUpdatedBy}`,
 			);

@@ -44,6 +44,20 @@ export abstract class SettingsLoader {
 			settings.firstHeadingPageTitle = false;
 		}
 
+		if (!settings.updateableUsers) {
+			settings.updateableUsers = [];
+		}
+		if (!settings.updatableUsers) {
+			settings.updatableUsers = [];
+		}
+		settings.updateableUsers = [
+			...new Set([
+				...settings.updateableUsers,
+				...settings.updatableUsers,
+			]),
+		];
+		settings.updatableUsers = settings.updateableUsers;
+
 		return settings as ConfluenceSettings;
 	}
 }
