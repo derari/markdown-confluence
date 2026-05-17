@@ -1,8 +1,6 @@
 import { ChartData, MermaidRenderer } from "@markdown-confluence/lib";
-import path from "path";
-import puppeteer, { PuppeteerLaunchOptions } from "puppeteer";
-import { downloadBrowser } from "puppeteer/lib/esm/puppeteer/node/install.js";
-import url from "url";
+import puppeteer, { LaunchOptions } from "puppeteer";
+import { downloadBrowsers } from "puppeteer/lib/puppeteer/node/install.js";
 
 interface RemoteWindowedCustomFunctions {
 	renderMermaidChart: (
@@ -12,16 +10,15 @@ interface RemoteWindowedCustomFunctions {
 }
 
 export class PuppeteerMermaidRenderer implements MermaidRenderer {
-	async captureMermaidCharts(
-		charts: ChartData[],
-	): Promise<Map<string, Buffer>> {
+	async captureMermaidCharts(charts: ChartData[]): Promise<Map<string, Buffer>> {
 		const capturedCharts = new Map<string, Buffer>();
 
-		await downloadBrowser();
+		await downloadBrowsers();
 		//for (const chart of charts) {
 		const promises = charts.map(async (chart) => {
+			const executablePath = await puppeteer.executablePath();
 			const puppeteerLaunchConfig = {
-				executablePath: puppeteer.executablePath(),
+				executablePath,
 				headless: true,
 				args: [
 					"--ignore-certificate-errors",
@@ -30,21 +27,18 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 					"--disable-accelerated-2d-canvas",
 					"--disable-gpu",
 				],
-			} satisfies PuppeteerLaunchOptions;
+			} satisfies LaunchOptions;
 
-			console.log(
-				"LAUNCHING CHROME",
-				JSON.stringify(puppeteerLaunchConfig),
-			);
+			console.log("LAUNCHING CHROME", JSON.stringify(puppeteerLaunchConfig));
 			const browser = await puppeteer.launch(puppeteerLaunchConfig);
 
 			const page = await browser.newPage();
 			try {
-				const mermaidHTMLPath = path.join(
-					__dirname,
+				const pathToLoad = new URL(
+					/* @vite-ignore */
 					"mermaid_renderer.html",
-				);
-				const pathToLoad = url.pathToFileURL(mermaidHTMLPath).href;
+					import.meta.url,
+				).href;
 
 				await page.goto(pathToLoad);
 
@@ -83,7 +77,7 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 					width: result.width,
 					height: result.height,
 				});
-				const imageBuffer = await page.screenshot();
+				const imageBuffer = Buffer.from(await page.screenshot());
 				capturedCharts.set(chart.name, imageBuffer);
 			} finally {
 				await page.close();

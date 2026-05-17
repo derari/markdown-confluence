@@ -5,11 +5,16 @@
 *.iml
 .idea
 
-# npm
+# dependencies
 node_modules
 
 # Exclude sourcemaps
 *.map
+
+# mutation testing
+.stryker-tmp/
+reports/
+stryker.log
 
 # obsidian
 data.json

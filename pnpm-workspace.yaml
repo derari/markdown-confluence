@@ -1,0 +1,20 @@
+allowBuilds:
+    "@parcel/watcher": false
+    esbuild: false
+    msgpackr-extract: false
+    puppeteer: true
+
+overrides:
+    vite: npm:@voidzero-dev/vite-plus-core@0.1.21
+    vitest: npm:@voidzero-dev/vite-plus-test@0.1.21
+
+peerDependencyRules:
+    allowedVersions:
+        vitest: 0.1.21
+
+packages:
+    - packages/lib
+    - packages/mermaid-electron-renderer
+    - packages/mermaid-puppeteer-renderer
+    - packages/cli
+    - packages/obsidian

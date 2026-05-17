@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { expect, test } from "@jest/globals";
-import { MarkdownFile } from "./adaptors";
+import { expect, test } from "@effect/vitest";
+import { MarkdownFile } from "./MarkdownWorkspace";
 import { convertMDtoADF } from "./MdToADF";
 import { ConfluenceSettings } from "./Settings";
 
@@ -14,8 +14,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Headers",
 		frontmatter: {
 			title: "Headers",
-			description:
-				"A Markdown file demonstrating different header levels.",
+			description: "A Markdown file demonstrating different header levels.",
 		},
 	},
 	{
@@ -27,8 +26,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Emphasis",
 		frontmatter: {
 			title: "Emphasis",
-			description:
-				"A Markdown file demonstrating different text emphasis styles.",
+			description: "A Markdown file demonstrating different text emphasis styles.",
 		},
 	},
 	{
@@ -40,8 +38,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Lists",
 		frontmatter: {
 			title: "Lists",
-			description:
-				"A Markdown file demonstrating ordered and unordered lists.",
+			description: "A Markdown file demonstrating ordered and unordered lists.",
 		},
 	},
 	{
@@ -65,8 +62,19 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Images",
 		frontmatter: {
 			title: "Images",
-			description:
-				"A Markdown file demonstrating different image styles.",
+			description: "A Markdown file demonstrating different image styles.",
+		},
+	},
+	{
+		folderName: "reference_images",
+		absoluteFilePath: "/path/to/reference_images.md",
+		fileName: "reference_images.md",
+		contents:
+			"![Alt text][image-ref]\n\n![Collapsed reference][]\n\n[image-ref]: ../images/the-image.png\n[Collapsed reference]: ../images/collapsed.png",
+		pageTitle: "Reference Images",
+		frontmatter: {
+			title: "Reference Images",
+			description: "A Markdown file demonstrating reference-style image links.",
 		},
 	},
 	{
@@ -77,16 +85,14 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Code",
 		frontmatter: {
 			title: "Code",
-			description:
-				"A Markdown file demonstrating inline code and code blocks.",
+			description: "A Markdown file demonstrating inline code and code blocks.",
 		},
 	},
 	{
 		folderName: "tables",
 		absoluteFilePath: "/path/to/tables.md",
 		fileName: "tables.md",
-		contents:
-			"| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |",
+		contents: "| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |",
 		pageTitle: "Tables",
 		frontmatter: {
 			title: "Tables",
@@ -112,21 +118,45 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Horizontal Rules",
 		frontmatter: {
 			title: "Horizontal Rules",
-			description:
-				"A Markdown file demonstrating different horizontal rule styles.",
+			description: "A Markdown file demonstrating different horizontal rule styles.",
 		},
 	},
 	{
 		folderName: "inline_html",
 		absoluteFilePath: "/path/to/inline_html.md",
 		fileName: "inline_html.md",
-		contents:
-			"<p>Paragraph with <strong>bold</strong> and <em>italic</em> text.</p>",
+		contents: "<p>Paragraph with <strong>bold</strong> and <em>italic</em> text.</p>",
 		pageTitle: "Inline HTML",
 		frontmatter: {
 			title: "Inline HTML",
-			description:
-				"A Markdown file demonstrating the use of inline HTML.",
+			description: "A Markdown file demonstrating the use of inline HTML.",
+		},
+	},
+	{
+		folderName: "html_comments",
+		absoluteFilePath: "/path/to/html_comments.md",
+		fileName: "html_comments.md",
+		contents: [
+			"Before",
+			"",
+			"<!-- hidden block comment -->",
+			"",
+			"Middle <!-- hidden inline comment --> text",
+			"",
+			"<!-- multi-line",
+			"hidden comment -->",
+			"After",
+			"",
+			"`<!-- visible inline code comment -->`",
+			"",
+			"```html",
+			"<!-- visible fenced code comment -->",
+			"```",
+		].join("\n"),
+		pageTitle: "HTML Comments",
+		frontmatter: {
+			title: "HTML Comments",
+			description: "A Markdown file demonstrating HTML comments are ignored.",
 		},
 	},
 	{
@@ -137,8 +167,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Escaping",
 		frontmatter: {
 			title: "Escaping",
-			description:
-				"A Markdown file demonstrating how to escape special characters.",
+			description: "A Markdown file demonstrating how to escape special characters.",
 		},
 	},
 	{

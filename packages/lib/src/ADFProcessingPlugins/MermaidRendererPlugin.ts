@@ -4,6 +4,8 @@ import { JSONDocNode } from "@atlaskit/editor-json-transformer";
 import { ADFProcessingPlugin, PublisherFunctions } from "./types";
 import { ADFEntity } from "@atlaskit/adf-utils/types";
 import SparkMD5 from "spark-md5";
+import { Effect } from "effect";
+import { MarkdownConfluencePlatform, runEffect } from "../effects";
 
 export function getMermaidFileName(mermaidContent: string | undefined) {
 	const mermaidText = mermaidContent ?? "flowchart LR\nid1[Missing Chart]";
@@ -21,28 +23,21 @@ export interface MermaidRenderer {
 	captureMermaidCharts(charts: ChartData[]): Promise<Map<string, Buffer>>;
 }
 
-export class MermaidRendererPlugin
-	implements
-		ADFProcessingPlugin<
-			ChartData[],
-			Record<string, UploadedImageData | null>
-		>
-{
+export class MermaidRendererPlugin implements ADFProcessingPlugin<
+	ChartData[],
+	Record<string, UploadedImageData | null>
+> {
 	constructor(private mermaidRenderer: MermaidRenderer) {}
 
 	extract(adf: JSONDocNode): ChartData[] {
 		const mermaidNodes = filter(
 			adf,
-			(node) =>
-				node.type == "codeBlock" &&
-				(node.attrs || {})?.["language"] === "mermaid",
+			(node) => node.type == "codeBlock" && (node.attrs || {})?.["language"] === "mermaid",
 		);
 
 		const mermaidNodesToUpload = new Set(
 			mermaidNodes.map((node) => {
-				const mermaidDetails = getMermaidFileName(
-					node?.content?.at(0)?.text,
-				);
+				const mermaidDetails = getMermaidFileName(node?.content?.at(0)?.text);
 				return {
 					name: mermaidDetails.uploadFilename,
 					data: mermaidDetails.mermaidText,
@@ -57,34 +52,47 @@ export class MermaidRendererPlugin
 		mermaidNodesToUpload: ChartData[],
 		supportFunctions: PublisherFunctions,
 	): Promise<Record<string, UploadedImageData | null>> {
-		let imageMap: Record<string, UploadedImageData | null> = {};
-		if (mermaidNodesToUpload.length === 0) {
-			return imageMap;
-		}
-
-		const mermaidChartsAsImages =
-			await this.mermaidRenderer.captureMermaidCharts([
-				...mermaidNodesToUpload,
-			]);
-
-		for (const mermaidImage of mermaidChartsAsImages) {
-			const uploadedContent = await supportFunctions.uploadBuffer(
-				mermaidImage[0],
-				mermaidImage[1],
-			);
-
-			imageMap = {
-				...imageMap,
-				[mermaidImage[0]]: uploadedContent,
-			};
-		}
-
-		return imageMap;
+		return runEffect(this.transformEffect(mermaidNodesToUpload, supportFunctions));
 	}
-	load(
-		adf: JSONDocNode,
-		imageMap: Record<string, UploadedImageData | null>,
-	): JSONDocNode {
+
+	transformEffect(
+		mermaidNodesToUpload: ChartData[],
+		supportFunctions: PublisherFunctions,
+	): Effect.Effect<
+		Record<string, UploadedImageData | null>,
+		unknown,
+		MarkdownConfluencePlatform
+	> {
+		const mermaidRenderer = this.mermaidRenderer;
+
+		return Effect.gen(function* () {
+			let imageMap: Record<string, UploadedImageData | null> = {};
+			if (mermaidNodesToUpload.length === 0) {
+				return imageMap;
+			}
+
+			const mermaidChartsAsImages = yield* Effect.tryPromise({
+				try: () => mermaidRenderer.captureMermaidCharts([...mermaidNodesToUpload]),
+				catch: identity,
+			});
+
+			for (const mermaidImage of mermaidChartsAsImages) {
+				const uploadedContent = yield* supportFunctions.uploadBufferEffect(
+					mermaidImage[0],
+					mermaidImage[1],
+					"image/png",
+				);
+
+				imageMap = {
+					...imageMap,
+					[mermaidImage[0]]: uploadedContent,
+				};
+			}
+
+			return imageMap;
+		});
+	}
+	load(adf: JSONDocNode, imageMap: Record<string, UploadedImageData | null>): JSONDocNode {
 		let afterAdf = adf as ADFEntity;
 
 		afterAdf =
@@ -95,14 +103,12 @@ export class MermaidRendererPlugin
 						if (!mermaidContent) {
 							return;
 						}
-						const mermaidFilename =
-							getMermaidFileName(mermaidContent);
+						const mermaidFilename = getMermaidFileName(mermaidContent);
 
 						if (!imageMap[mermaidFilename.uploadFilename]) {
 							return;
 						}
-						const mappedImage =
-							imageMap[mermaidFilename.uploadFilename];
+						const mappedImage = imageMap[mermaidFilename.uploadFilename];
 						if (mappedImage) {
 							node.type = "mediaSingle";
 							node.attrs["layout"] = "center";
@@ -130,4 +136,8 @@ export class MermaidRendererPlugin
 
 		return afterAdf as JSONDocNode;
 	}
+}
+
+function identity(error: unknown): unknown {
+	return error;
 }

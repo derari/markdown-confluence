@@ -4,6 +4,8 @@ import { JSONDocNode } from "@atlaskit/editor-json-transformer";
 import { ADFEntity } from "@atlaskit/adf-utils/dist/types/types";
 import { p } from "@atlaskit/adf-utils/builders";
 import { ADFProcessingPlugin, PublisherFunctions } from "./types";
+import { Effect } from "effect";
+import { MarkdownConfluencePlatform, runEffect } from "../effects";
 
 export const ImageUploaderPlugin: ADFProcessingPlugin<
 	string[],
@@ -12,14 +14,10 @@ export const ImageUploaderPlugin: ADFProcessingPlugin<
 	extract(adf: JSONDocNode): string[] {
 		const mediaNodes = filter(
 			adf,
-			(node) =>
-				node.type === "media" &&
-				(node.attrs || {})?.["type"] === "file",
+			(node) => node.type === "media" && (node.attrs || {})?.["type"] === "file",
 		);
 
-		const imagesToUpload = new Set(
-			mediaNodes.map((node) => node?.attrs?.["url"]),
-		);
+		const imagesToUpload = new Set(mediaNodes.map((node) => node?.attrs?.["url"]));
 
 		return Array.from(imagesToUpload);
 	},
@@ -28,28 +26,38 @@ export const ImageUploaderPlugin: ADFProcessingPlugin<
 		imagesToUpload: string[],
 		supportFunctions: PublisherFunctions,
 	): Promise<Record<string, UploadedImageData | null>> {
-		let imageMap: Record<string, UploadedImageData | null> = {};
-
-		for (const imageUrl of imagesToUpload.values()) {
-			const filename = imageUrl.split("://")[1];
-			if (!filename) {
-				continue;
-			}
-			const uploadedContent = await supportFunctions.uploadFile(filename);
-
-			imageMap = {
-				...imageMap,
-				[imageUrl]: uploadedContent,
-			};
-		}
-
-		return imageMap;
+		return runEffect(ImageUploaderPlugin.transformEffect!(imagesToUpload, supportFunctions));
 	},
 
-	load(
-		adf: JSONDocNode,
-		imageMap: Record<string, UploadedImageData | null>,
-	): JSONDocNode {
+	transformEffect(
+		imagesToUpload: string[],
+		supportFunctions: PublisherFunctions,
+	): Effect.Effect<
+		Record<string, UploadedImageData | null>,
+		unknown,
+		MarkdownConfluencePlatform
+	> {
+		return Effect.gen(function* () {
+			let imageMap: Record<string, UploadedImageData | null> = {};
+
+			for (const imageUrl of imagesToUpload.values()) {
+				const filename = imageUrl.split("://")[1];
+				if (!filename) {
+					continue;
+				}
+				const uploadedContent = yield* supportFunctions.uploadFileEffect(filename);
+
+				imageMap = {
+					...imageMap,
+					[imageUrl]: uploadedContent,
+				};
+			}
+
+			return imageMap;
+		});
+	},
+
+	load(adf: JSONDocNode, imageMap: Record<string, UploadedImageData | null>): JSONDocNode {
 		let afterAdf = adf as ADFEntity;
 
 		afterAdf =
@@ -79,12 +87,8 @@ export const ImageUploaderPlugin: ADFProcessingPlugin<
 					if (!node || !node.content) {
 						return;
 					}
-					if (
-						node.content.at(0)?.attrs?.["url"] !== undefined &&
-						(
-							node.content.at(0)?.attrs?.["url"] as string
-						).startsWith("file://")
-					) {
+					const url = node.content.at(0)?.attrs?.["url"];
+					if (typeof url === "string" && url.startsWith("file://")) {
 						return p("Invalid Image Path");
 					}
 					return;

@@ -1,31 +1,35 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { expect, test } from "@jest/globals";
+import { expect, test } from "@effect/vitest";
 import { ConfluenceClient } from "confluence.js";
-import {
-	BinaryFile,
-	FilesToUpload,
-	LoaderAdaptor,
-	MarkdownFile,
-} from "./adaptors";
+import { Effect } from "effect";
 import { orderMarks } from "./AdfEqual";
 import { ConfluencePerPageAllValues } from "./ConniePageConfig";
 import { Publisher } from "./Publisher";
-import {
-	AutoSettingsLoader,
-	DefaultSettingsLoader,
-	EnvironmentVariableSettingsLoader,
-	StaticSettingsLoader,
-} from "./SettingsLoader";
+import { loadConfluenceSettings } from "./SettingsConfig";
 import {
 	ChartData,
 	MermaidRenderer,
 	MermaidRendererPlugin,
 } from "./ADFProcessingPlugins/MermaidRendererPlugin";
+import { RuntimeEnvironmentLive, RuntimeEnvironmentService, runEffect } from "./effects";
+import {
+	BinaryFile,
+	FilesToUpload,
+	MarkdownFile,
+	MarkdownWorkspace,
+	MarkdownWorkspaceService,
+} from "./MarkdownWorkspace";
 import { JiraLinkPlugin } from "./ADFProcessingPlugins";
 
-const settingsLoader = new AutoSettingsLoader();
-const settings = settingsLoader.load();
+const confluenceIntegrationTestsEnabled = Effect.runSync(
+	Effect.gen(function* () {
+		const runtimeEnvironment = yield* RuntimeEnvironmentService;
+		const enabled = yield* runtimeEnvironment.getEnv("CONFLUENCE_INTEGRATION_TESTS");
+		return enabled === "true";
+	}).pipe(Effect.provide(RuntimeEnvironmentLive)),
+);
+const confluenceIntegrationTest = confluenceIntegrationTestsEnabled ? test : test.skip;
 
 const markdownTestCases: MarkdownFile[] = [
 	{
@@ -37,8 +41,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Headers",
 		frontmatter: {
 			title: "Headers",
-			description:
-				"A Markdown file demonstrating different header levels.",
+			description: "A Markdown file demonstrating different header levels.",
 		},
 	},
 	{
@@ -50,8 +53,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Emphasis",
 		frontmatter: {
 			title: "Emphasis",
-			description:
-				"A Markdown file demonstrating different text emphasis styles.",
+			description: "A Markdown file demonstrating different text emphasis styles.",
 		},
 	},
 	{
@@ -63,8 +65,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Lists",
 		frontmatter: {
 			title: "Lists",
-			description:
-				"A Markdown file demonstrating ordered and unordered lists.",
+			description: "A Markdown file demonstrating ordered and unordered lists.",
 		},
 	},
 	{
@@ -102,16 +103,14 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Code",
 		frontmatter: {
 			title: "Code",
-			description:
-				"A Markdown file demonstrating inline code and code blocks.",
+			description: "A Markdown file demonstrating inline code and code blocks.",
 		},
 	},
 	{
 		folderName: "tables",
 		absoluteFilePath: "/path/to/tables.md",
 		fileName: "tables.md",
-		contents:
-			"| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |",
+		contents: "| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |",
 		pageTitle: "Tables",
 		frontmatter: {
 			title: "Tables",
@@ -137,8 +136,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Horizontal Rules",
 		frontmatter: {
 			title: "Horizontal Rules",
-			description:
-				"A Markdown file demonstrating different horizontal rule styles.",
+			description: "A Markdown file demonstrating different horizontal rule styles.",
 		},
 	},
 	/*
@@ -164,8 +162,7 @@ const markdownTestCases: MarkdownFile[] = [
 		pageTitle: "Escaping",
 		frontmatter: {
 			title: "Escaping",
-			description:
-				"A Markdown file demonstrating how to escape special characters.",
+			description: "A Markdown file demonstrating how to escape special characters.",
 		},
 	},
 	{
@@ -227,104 +224,107 @@ const markdownTestCases: MarkdownFile[] = [
 ];
 
 class TestMermaidRenderer implements MermaidRenderer {
-	async captureMermaidCharts(
-		_charts: ChartData[],
-	): Promise<Map<string, Buffer>> {
+	async captureMermaidCharts(_charts: ChartData[]): Promise<Map<string, Buffer>> {
 		const capturedCharts = new Map<string, Buffer>();
 		return capturedCharts;
 	}
 }
 
-class InMemoryAdaptor implements LoaderAdaptor {
-	private inMemoryFiles: MarkdownFile[];
+class InMemoryMarkdownWorkspace implements MarkdownWorkspace {
+	readonly getMarkdownFilesToUpload: Effect.Effect<FilesToUpload, Error>;
 
-	constructor(inMemoryFiles: MarkdownFile[]) {
-		this.inMemoryFiles = inMemoryFiles;
+	constructor(private readonly inMemoryFiles: MarkdownFile[]) {
+		this.getMarkdownFilesToUpload = Effect.succeed(inMemoryFiles);
 	}
-	async updateMarkdownValues(
+
+	updateMarkdownValues(
 		_absoluteFilePath: string,
 		_values: Partial<ConfluencePerPageAllValues>,
-	): Promise<void> {}
-
-	async loadMarkdownFile(absoluteFilePath: string): Promise<MarkdownFile> {
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		return this.inMemoryFiles.find(
-			(t) => t.absoluteFilePath === absoluteFilePath,
-		)!;
-	}
-	async getMarkdownFilesToUpload(): Promise<FilesToUpload> {
-		return this.inMemoryFiles;
+	): Effect.Effect<void, Error> {
+		return Effect.void;
 	}
 
-	async readBinary(
+	loadMarkdownFile(absoluteFilePath: string): Effect.Effect<MarkdownFile, Error> {
+		const file = this.inMemoryFiles.find((item) => item.absoluteFilePath === absoluteFilePath);
+		if (!file) {
+			return Effect.fail(
+				new Error(`Missing markdown file in test workspace: ${absoluteFilePath}`),
+			);
+		}
+		return Effect.succeed(file);
+	}
+
+	readBinary(
 		_path: string,
 		_referencedFromFilePath: string,
-	): Promise<false | BinaryFile> {
-		throw new Error("Method not implemented.");
+	): Effect.Effect<false | BinaryFile, Error> {
+		return Effect.fail(new Error("Method not implemented."));
 	}
 }
 
-test("Upload to Confluence", async () => {
-	const filesystemAdaptor = new InMemoryAdaptor(markdownTestCases);
-	const mermaidRenderer = new TestMermaidRenderer();
-	const confluenceClient = new ConfluenceClient({
-		host: settings.confluenceBaseUrl,
-		authentication: {
-			basic: {
-				email: settings.atlassianUserName,
-				apiToken: settings.atlassianApiToken,
+confluenceIntegrationTest(
+	"Upload to Confluence",
+	async () => {
+		const settings = await loadConfluenceSettings();
+		const workspace = new InMemoryMarkdownWorkspace(markdownTestCases);
+		const mermaidRenderer = new TestMermaidRenderer();
+		const confluenceClient = new ConfluenceClient({
+			host: settings.confluenceBaseUrl,
+			authentication: {
+				basic: {
+					email: settings.atlassianUserName,
+					apiToken: settings.atlassianApiToken,
+				},
 			},
-		},
-	});
-
-	const searchParams = {
-		type: "page",
-		space: "it",
-		title: "Test - bf8bb13d-21b4-31b6-4584-8b9683d82086",
-		expand: ["version", "body.atlas_doc_format", "ancestors"],
-	};
-	const contentByTitle = await confluenceClient.content.getContent(
-		searchParams,
-	);
-
-	const pageResult = contentByTitle.results[0];
-	if (!pageResult) {
-		throw new Error("Missing Parent Page");
-	}
-	settings.confluenceParentId = pageResult.id;
-
-	const settingLoaders = [
-		new EnvironmentVariableSettingsLoader(),
-		new StaticSettingsLoader({
-			confluenceParentId: pageResult.id,
-		}),
-		new DefaultSettingsLoader(),
-	];
-	const publisherSettingsLoader = new AutoSettingsLoader(settingLoaders);
-
-	const publisher = new Publisher(
-		filesystemAdaptor,
-		publisherSettingsLoader,
-		confluenceClient,
-		[
-			new MermaidRendererPlugin(mermaidRenderer),
-			new JiraLinkPlugin("https://jira.example.com"),
-		],
-	);
-
-	const result = await publisher.publish();
-
-	for (const uploadResult of result) {
-		const afterUpload = await confluenceClient.content.getContentById({
-			id: uploadResult.node.file.pageId,
-			expand: ["body.atlas_doc_format", "space"],
 		});
 
-		const uploadedAdf = orderMarks(
-			JSON.parse(afterUpload.body?.atlas_doc_format?.value ?? "{}"),
-		);
-		const returnedAdf = orderMarks(uploadResult.node.file.contents);
+		const searchParams = {
+			type: "page",
+			space: "it",
+			title: "Test - bf8bb13d-21b4-31b6-4584-8b9683d82086",
+			expand: ["version", "body.atlas_doc_format", "ancestors"],
+		};
+		const contentByTitle = await confluenceClient.content.getContent(searchParams);
 
-		expect(returnedAdf).toEqual(uploadedAdf);
-	}
-}, 300000);
+		const pageResult = contentByTitle.results[0];
+		if (!pageResult) {
+			throw new Error("Missing Parent Page");
+		}
+		settings.confluenceParentId = pageResult.id;
+
+		const publisher = new Publisher(settings, confluenceClient, [
+			new MermaidRendererPlugin(mermaidRenderer),
+		]);
+	//
+	// const publisher = new Publisher(
+	// 	filesystemAdaptor,
+	// 	publisherSettingsLoader,
+	// 	confluenceClient,
+	// 	[
+	// 		new MermaidRendererPlugin(mermaidRenderer),
+	// 		new JiraLinkPlugin("https://jira.example.com"),
+	// 	],
+	// );
+
+		const result = await runEffect(
+			publisher
+				.publishEffect()
+				.pipe(Effect.provideService(MarkdownWorkspaceService, workspace)),
+		);
+
+		for (const uploadResult of result) {
+			const afterUpload = await confluenceClient.content.getContentById({
+				id: uploadResult.node.file.pageId,
+				expand: ["body.atlas_doc_format", "space"],
+			});
+
+			const uploadedAdf = orderMarks(
+				JSON.parse(afterUpload.body?.atlas_doc_format?.value ?? "{}"),
+			);
+			const returnedAdf = orderMarks(uploadResult.node.file.contents);
+
+			expect(returnedAdf).toEqual(uploadedAdf);
+		}
+	},
+	300000,
+);

@@ -1,4 +1,4 @@
-FROM ghcr.io/puppeteer/puppeteer:21.2.1@sha256:46314c20ce7e5997175241c93a1a707e1e9df84b38625fb229675c9e3b075147
+FROM ghcr.io/puppeteer/puppeteer:24.43.1@sha256:75e3404b1df87e39eec2af9fa95e4e0fdbc5c73fc924aafa1429c89a2a3e8654
 
 COPY ./dist /app
 
