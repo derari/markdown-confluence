@@ -155,12 +155,24 @@ importers:
       '@electron/remote':
         specifier: ^2.1.3
         version: 2.1.3(electron@42.0.1)
+      '@iconify-json/devicon-plain':
+        specifier: ^1.2.57
+        version: 1.2.57
+      '@iconify-json/lucide':
+        specifier: ^1.2.118
+        version: 1.2.118
+      '@iconify-json/nonicons':
+        specifier: ^1.2.2
+        version: 1.2.2
       '@markdown-confluence/lib':
         specifier: workspace:5.5.2
         version: link:../lib
       mermaid:
         specifier: ^11.15.0
         version: 11.15.0
+      mermaid-fmc:
+        specifier: ^1.0.0
+        version: 1.0.0(mermaid@11.15.0)
       uuid:
         specifier: ^14.0.0
         version: 14.0.0
@@ -170,6 +182,15 @@ importers:
       '@effect/platform-node':
         specifier: 4.0.0-beta.66
         version: 4.0.0-beta.66(effect@4.0.0-beta.66)(ioredis@5.10.1)
+      '@iconify-json/devicon-plain':
+        specifier: 1.2.57
+        version: 1.2.57
+      '@iconify-json/lucide':
+        specifier: 1.2.118
+        version: 1.2.118
+      '@iconify-json/nonicons':
+        specifier: 1.2.2
+        version: 1.2.2
       '@markdown-confluence/lib':
         specifier: workspace:5.5.2
         version: link:../lib
@@ -179,6 +200,9 @@ importers:
       mermaid:
         specifier: 11.15.0
         version: 11.15.0
+      mermaid-fmc:
+        specifier: 1.0.0
+        version: 1.0.0(mermaid@11.15.0)
       puppeteer:
         specifier: 25.0.2
         version: 25.0.2(typescript@6.0.3)
@@ -490,11 +514,23 @@ packages:
   '@emnapi/wasi-threads@1.2.1':
     resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
 
+  '@iconify-json/devicon-plain@1.2.57':
+    resolution: {integrity: sha512-3p8PgK63KejM1DhuL7LBslvfmPmwjx6DkO3EM+om6MGc8kpc9yX7CgOPWuM2sFSxEblzqxAwnbUlIO56fJjMRw==}
+
+  '@iconify-json/lucide@1.2.118':
+    resolution: {integrity: sha512-JBnK4YOq6K/lA0JP//27QxFxJ4120TjvfXAzGZZIGjCcXcRRRFxl1rcV7+IWdcVCe90KXdqVaAwLaLf6G3HELw==}
+
+  '@iconify-json/nonicons@1.2.2':
+    resolution: {integrity: sha512-W68A8EuZxQTsaLh9jI44DhGUJwhyaqUWlGjhkM9791tOV1iYiB8Eigsu63sz59M9zueaFNuOCLKdUF69ayulwA==}
+
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
 
   '@iconify/utils@3.1.3':
     resolution: {integrity: sha512-LPKOXPn/zV+zis1oOfGWogaXVpqUybF3ZS6SCZIsz8vg0ivVp9+fVqyYB7xq0aiST/VhUQYGO1qo6uoYSiEJqw==}
+
+  '@iconify/utils@3.1.4':
+    resolution: {integrity: sha512-b1S7B1k9ohZ+iNTi2ATxbRYG9fTrJmUT0rc46bvVnNxqNRGW7dyo/vRREwyniI5IRN2RSJHDcm+s3BjWrSAjHw==}
 
   '@inquirer/ansi@2.0.5':
     resolution: {integrity: sha512-doc2sWgJpbFQ64UflSVd17ibMGDuxO1yKgOgLMwavzESnXjFWJqUeG8saYosqKpHp4kWiM5x1nXvEjbpx90gzw==}
@@ -1934,6 +1970,9 @@ packages:
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
+  elkjs@0.12.0:
+    resolution: {integrity: sha512-YZcKynxVxYoKIOEpywEPwCFdg+BTbxQRNf3pbwdDCvc8O3kQD8bmIwSxKU1eOTVc4Xo+VG9Te+575mlfvOrhEQ==}
+
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
 
@@ -2420,6 +2459,11 @@ packages:
 
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
+
+  mermaid-fmc@1.0.0:
+    resolution: {integrity: sha512-z4Jgx+tWVaFZMu2+t2ZHr1oMKhZliO6z3k7pUvfchzfGM32t7A8SR2v0JzGKMzCO3Hpzw+mJRxd07KAp5yKu8g==}
+    peerDependencies:
+      mermaid: ^11
 
   mermaid@11.15.0:
     resolution: {integrity: sha512-pTMbcf3rWdtLiYGpmoTjHEpeY8seiy6sR+9nD7LOs8KfUbHE4lOUAprTRqRAcWSQ6MQpdX+YEsxShtGsINtPtw==}
@@ -3565,9 +3609,27 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@iconify-json/devicon-plain@1.2.57':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/lucide@1.2.118':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/nonicons@1.2.2':
+    dependencies:
+      '@iconify/types': 2.0.0
+
   '@iconify/types@2.0.0': {}
 
   '@iconify/utils@3.1.3':
+    dependencies:
+      '@antfu/install-pkg': 1.1.0
+      '@iconify/types': 2.0.0
+      import-meta-resolve: 4.2.0
+
+  '@iconify/utils@3.1.4':
     dependencies:
       '@antfu/install-pkg': 1.1.0
       '@iconify/types': 2.0.0
@@ -4814,6 +4876,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  elkjs@0.12.0: {}
+
   emoji-regex@10.6.0: {}
 
   emoji-regex@8.0.0: {}
@@ -5261,6 +5325,12 @@ snapshots:
   memoize-one@6.0.0: {}
 
   merge-descriptors@1.0.3: {}
+
+  mermaid-fmc@1.0.0(mermaid@11.15.0):
+    dependencies:
+      '@iconify/utils': 3.1.4
+      elkjs: 0.12.0
+      mermaid: 11.15.0
 
   mermaid@11.15.0:
     dependencies:

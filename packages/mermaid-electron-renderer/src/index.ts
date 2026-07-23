@@ -1,9 +1,25 @@
 import { BrowserWindow } from "@electron/remote";
 import { ChartData, MermaidRenderer } from "@markdown-confluence/lib";
 import mermaid, { MermaidConfig } from "mermaid";
+import fmc, { registerIconPacks, type IconPack } from "mermaid-fmc";
+import lucideIcons from "@iconify-json/lucide/icons.json";
+import noniconsIcons from "@iconify-json/nonicons/icons.json";
+import deviconIcons from "@iconify-json/devicon-plain/icons.json";
 import { v4 as uuidv4 } from "uuid";
 
 let mermaidRenderHtml: string;
+
+// Register FMC as an external diagram once. Registration is async and global,
+// so we keep the promise and await it before rendering.
+const externalDiagramsRegistered = mermaid.registerExternalDiagrams([fmc]);
+
+// Bundle the icon packs at compile time (eager imports, not lazy loaders) so
+// FMC diagrams that use icons render fully offline with no runtime fetch.
+registerIconPacks([
+	{ name: "lucide", icons: lucideIcons as NonNullable<IconPack["icons"]> },
+	{ name: "nonicons", icons: noniconsIcons as NonNullable<IconPack["icons"]> },
+	{ name: "devicon", icons: deviconIcons as NonNullable<IconPack["icons"]> },
+]);
 
 const pluginMermaidConfig: MermaidConfig = {
 	theme: "base",
@@ -58,6 +74,8 @@ export class ElectronMermaidRenderer implements MermaidRenderer {
 			}
 
 			await chartWindow.loadURL(mermaidRenderHtml);
+
+			await externalDiagramsRegistered;
 
 			const { themeVariables, ...mermaidInitConfig } = this.mermaidConfig;
 

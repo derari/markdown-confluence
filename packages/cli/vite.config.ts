@@ -27,11 +27,29 @@ function copyRendererHtmlPlugin(): Plugin {
 
 					yield* fs.makeDirectory(path.dirname(target), { recursive: true });
 					yield* fs.copyFile(source, target);
+
+					// Mark dist/ as ES modules so the bundle runs as ESM even when it
+					// is copied away from the package root (e.g. `COPY ./dist /app` in
+					// the Docker image), without relying on the root package.json.
+					yield* fs.writeFileString(
+						path.resolve("dist/package.json"),
+						`${JSON.stringify({ type: "module" }, null, 2)}\n`,
+					);
 				}),
 			);
 		},
 	};
 }
+
+// The bundle is emitted as ESM, but bundled CommonJS dependencies still call
+// `require(...)` for externalized Node builtins. ESM has no `require`, so we
+// provide one via createRequire. See:
+// https://rolldown.rs/in-depth/bundling-cjs#require-external-modules
+const esmRequireShim = [
+	'import { createRequire as __createRequire } from "node:module";',
+	"const require = __createRequire(import.meta.url);",
+	"",
+].join("\n");
 
 export default defineConfig({
 	build: {
@@ -45,7 +63,7 @@ export default defineConfig({
 		rollupOptions: {
 			external: isNodeBuiltin,
 			output: {
-				banner: generatedBanner,
+				banner: `${generatedBanner}${esmRequireShim}`,
 				codeSplitting: false,
 			},
 		},

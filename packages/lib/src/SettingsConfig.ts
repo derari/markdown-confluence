@@ -27,6 +27,7 @@ export const confluenceSettingsConfig = Config.all({
 	folderToPublish: Config.string("folderToPublish"),
 	contentRoot: Config.string("contentRoot"),
 	firstHeadingPageTitle: Config.boolean("firstHeadingPageTitle"),
+	jiraUrl: Config.string("jiraUrl"),
 });
 
 export const ConfluenceSettingsLive: Layer.Layer<
