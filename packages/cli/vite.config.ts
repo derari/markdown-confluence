@@ -72,6 +72,12 @@ export default defineConfig({
 	},
 	plugins: [copyRendererHtmlPlugin()],
 	resolve: {
+		// Build for Node, not the browser. Without this the default client
+		// build enables the "browser" export condition, so packages like `ws`
+		// resolve to their browser stub — which throws "ws does not work in the
+		// browser" when puppeteer connects to Chrome over the DevTools
+		// WebSocket. Excluding "browser" makes `ws` resolve to its Node entry.
+		conditions: ["node", "module", "import", "require", "default"],
 		mainFields: ["module", "main"],
 	},
 });

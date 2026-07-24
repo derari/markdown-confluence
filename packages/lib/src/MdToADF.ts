@@ -15,6 +15,7 @@ import { ConfluenceSettings } from "./Settings";
 import { cleanUpUrlIfConfluence } from "./ConfluenceUrlParser";
 import { p, tableHeader, tableRow, table, tableCell } from "@atlaskit/adf-utils/builders";
 import { ADFEntity } from "@atlaskit/adf-utils/dist/types/types";
+import { parse as parseYaml } from "yaml";
 
 const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
 
@@ -204,11 +205,21 @@ function processADF(
 			return node;
 		},
 		tableHeader: (node, _parent) => {
-			node.attrs = { colspan: 1, rowspan: 1, colwidth: [340] };
+			const attrs = node.attrs ?? {};
+			node.attrs = {
+				colspan: (attrs["colspan"] as number) || 1,
+				rowspan: (attrs["rowspan"] as number) || 1,
+				colwidth: [340],
+			};
 			return node;
 		},
 		tableCell: (node, _parent) => {
-			node.attrs = { colspan: 1, rowspan: 1, colwidth: [340] };
+			const attrs = node.attrs ?? {};
+			node.attrs = {
+				colspan: (attrs["colspan"] as number) || 1,
+				rowspan: (attrs["rowspan"] as number) || 1,
+				colwidth: [340],
+			};
 			return node;
 		},
 		orderedList: (node, _parent) => {
@@ -243,6 +254,22 @@ function processADF(
 					);
 					node = parsedAdf;
 					return node;
+				} catch {
+					return node;
+				}
+			}
+
+			if (
+				typeof codeBlockLanguage === "string" &&
+				(codeBlockLanguage.startsWith("yaml-table") ||
+					codeBlockLanguage.startsWith("yaml table"))
+			) {
+				const yamlText = node?.content?.at(0)?.text;
+				if (!yamlText) {
+					return node;
+				}
+				try {
+					return yamlToTable(parseYaml(yamlText), frontmatter, confluenceBaseUrl);
 				} catch {
 					return node;
 				}
@@ -553,6 +580,98 @@ function entryAsRow(
 		}
 	});
 	return tableRow(values);
+}
+
+// Renders parsed YAML (a single object or an array of objects) as an ADF table.
+// Used by the `yaml-table` code-block language. Ragged rows are back-filled by
+// entryAsRow with "<"/"^" merge markers which mergeCells turns into col/rowspans.
+function yamlToTable(
+	data: unknown,
+	frontmatter: { [p: string]: unknown },
+	confluenceBaseUrl: string,
+): ADFEntity {
+	const headerLabels: string[] = [];
+	const headers: TableHeaderDefinition[] = [];
+	// @ts-ignore
+	const rows: TableRowDefinition[] = [tableRow(headers)];
+	const contentRows: TableRowDefinition[] = [];
+
+	const entries = Array.isArray(data) ? data : [data];
+	entries.forEach((entry) => {
+		const row = entryAsRow(
+			entry,
+			headerLabels,
+			headers,
+			contentRows,
+			frontmatter,
+			confluenceBaseUrl,
+		);
+		// @ts-ignore
+		rows.push(row);
+		// @ts-ignore
+		contentRows.push(row);
+	});
+	const t = table();
+	// @ts-ignore
+	t.content = rows;
+	mergeCells(t as unknown as ADFEntity);
+	return t as unknown as ADFEntity;
+}
+
+// Collapses the "<" (merge into cell on the left) and "^" (merge into cell
+// above) placeholder cells emitted by entryAsRow into real colspan/rowspan.
+function mergeCells(t: ADFEntity): void {
+	const rows = t.content ?? [];
+	for (let rowId = rows.length - 1; rowId >= 0; rowId--) {
+		const row = rows[rowId];
+		if (!row || !row.content) continue;
+		for (let colId = row.content.length - 1; colId >= 0; colId--) {
+			const cell = row.content[colId];
+			if (!cell) continue;
+			if (hasContentString(cell, "^")) {
+				incrementAttr(t, rowId - 1, colId, cell, "rowspan");
+				row.content.splice(colId, 1);
+			} else if (hasContentString(cell, "<")) {
+				incrementAttr(t, rowId, colId - 1, cell, "colspan");
+				row.content.splice(colId, 1);
+			}
+		}
+	}
+}
+
+function hasContentString(node: ADFEntity, expected: string): boolean {
+	let content = node.content;
+	const first = content?.[0];
+	if (first && first.type === "paragraph") {
+		content = first.content ?? [];
+	}
+	return (content?.[0]?.text ?? "") === expected;
+}
+
+function incrementAttr(
+	t: ADFEntity,
+	rowId: number,
+	colId: number,
+	src: ADFEntity,
+	key: "rowspan" | "colspan",
+): void {
+	const rows = t.content ?? [];
+	if (rowId < 0 || colId < 0 || rowId >= rows.length) {
+		return;
+	}
+	const row = rows[rowId];
+	if (!row || !row.content) return;
+	for (const cell of row.content) {
+		if (!cell) continue;
+		if (!cell.attrs) cell.attrs = {};
+		colId -= (cell.attrs["colspan"] as number) || 1;
+		if (colId === -1) {
+			const amount = (src.attrs?.[key] as number) || 1;
+			const current = cell.attrs[key] as number | undefined;
+			cell.attrs[key] = current ? current + amount : 1 + amount;
+		}
+		if (colId < 0) return;
+	}
 }
 
 export function convertMDtoADF(file: MarkdownFile, settings: ConfluenceSettings): LocalAdfFile {

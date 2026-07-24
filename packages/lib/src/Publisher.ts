@@ -238,7 +238,7 @@ export class Publisher {
 			if (lastUpdatedBy !== getMyAccountId() && !updateableUsers.includes(lastUpdatedBy)) {
 				return yield* Effect.fail(
 					new Error(
-						`Page last updated by another user. Won't publish over their changes. MyAccountId: ${getMyAccountId()}, Last Updated By: ${lastUpdatedBy}`,
+						`Page last updated by another user. Won't publish over their changes. MyAccountId: ${getMyAccountId()}, Last Updated By: ${lastUpdatedBy}, Updateable Users: ${JSON.stringify(updateableUsers)}`,
 					),
 				);
 			}

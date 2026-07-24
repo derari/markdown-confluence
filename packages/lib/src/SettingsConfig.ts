@@ -222,7 +222,14 @@ function readUpdateableUsers(fs: FileSystem, configPath: string): Effect.Effect<
 			return [];
 		}
 
-		return normalizeUpdateableUsers(config["updateableUsers"]);
+		// Accept both spellings ("updateableUsers" and "updatableUsers") and
+		// union them, matching the behaviour of the pre-migration loader.
+		return [
+			...new Set([
+				...normalizeUpdateableUsers(config["updateableUsers"]),
+				...normalizeUpdateableUsers(config["updatableUsers"]),
+			]),
+		];
 	});
 }
 
