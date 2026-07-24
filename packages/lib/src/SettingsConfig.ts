@@ -47,16 +47,22 @@ export function loadConfluenceSettingsEffect(): Effect.Effect<
 > {
 	return Effect.gen(function* () {
 		const provider = yield* makeConfluenceSettingsConfigProvider();
-		return yield* parseConfluenceSettingsEffect(provider);
+		const updateableUsers = yield* loadUpdateableUsersEffect();
+		return yield* parseConfluenceSettingsEffect(provider, updateableUsers);
 	});
 }
 
 export function parseConfluenceSettingsEffect(
 	provider: ConfigProvider.ConfigProvider,
+	updateableUsers: string[] = [],
 ): Effect.Effect<ConfluenceSettings, Error, Path> {
-	return confluenceSettingsConfig
-		.parse(provider)
-		.pipe(Effect.mapError(toError), Effect.flatMap(validateConfluenceSettingsEffect));
+	return confluenceSettingsConfig.parse(provider).pipe(
+		Effect.mapError(toError),
+		// `updateableUsers` is an array, which effect's Config cannot read, so it
+		// is loaded separately (config file only) and merged in here.
+		Effect.map((settings) => ({ ...settings, updateableUsers })),
+		Effect.flatMap(validateConfluenceSettingsEffect),
+	);
 }
 
 export function makeConfluenceSettingsConfigProvider(): Effect.Effect<
@@ -173,6 +179,66 @@ function makeConfigFileProvider(
 
 		return ConfigProvider.fromUnknown(pickConfluenceSettings(config));
 	});
+}
+
+// `updateableUsers` is a string[] allow-list of accounts whose changes we may
+// publish over. effect's Config has no array combinator, so it is read straight
+// from the config file (JSON array, or a comma-separated string) rather than
+// through the Config pipeline. It is intentionally config-file only.
+function loadUpdateableUsersEffect(): Effect.Effect<string[], Error, MarkdownConfluencePlatform> {
+	return Effect.gen(function* () {
+		const fs = yield* FileSystem;
+		const path = yield* Path;
+		const runtimeEnvironment = yield* RuntimeEnvironmentService;
+		const cwd = yield* runtimeEnvironment.cwd;
+		const argv = yield* runtimeEnvironment.argv;
+		const envConfigPath = yield* runtimeEnvironment.getEnv("CONFLUENCE_CONFIG_FILE");
+
+		const configPath = yield* Effect.try({
+			try: () => getConfigPath(argv, envConfigPath, cwd, path),
+			catch: toError,
+		});
+
+		return yield* readUpdateableUsers(fs, configPath);
+	});
+}
+
+function readUpdateableUsers(fs: FileSystem, configPath: string): Effect.Effect<string[], never> {
+	return Effect.gen(function* () {
+		const configData = yield* fs
+			.readFileString(configPath, "utf-8")
+			.pipe(Effect.catch(() => Effect.succeed(undefined)));
+
+		if (!configData) {
+			return [];
+		}
+
+		const config = yield* Effect.try({
+			try: () => JSON.parse(configData) as Record<string, unknown>,
+			catch: () => undefined,
+		}).pipe(Effect.catch(() => Effect.succeed(undefined)));
+
+		if (!config) {
+			return [];
+		}
+
+		return normalizeUpdateableUsers(config["updateableUsers"]);
+	});
+}
+
+function normalizeUpdateableUsers(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value.filter((entry): entry is string => typeof entry === "string");
+	}
+
+	if (typeof value === "string") {
+		return value
+			.split(",")
+			.map((entry) => entry.trim())
+			.filter((entry) => entry.length > 0);
+	}
+
+	return [];
 }
 
 function makeEnvironmentProvider(

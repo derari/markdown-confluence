@@ -9,6 +9,7 @@ export type ConfluenceSettings = {
 	contentRoot: string;
 	firstHeadingPageTitle: boolean;
 	jiraUrl: string;
+	updateableUsers: string[];
 };
 
 export const DEFAULT_SETTINGS: ConfluenceSettings = {
@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: ConfluenceSettings = {
 	contentRoot: ".",
 	firstHeadingPageTitle: false,
 	jiraUrl: "",
+	updateableUsers: [],
 };
 
 export class ConfluenceSettingsService extends Context.Service<

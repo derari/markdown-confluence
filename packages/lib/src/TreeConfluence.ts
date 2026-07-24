@@ -298,6 +298,7 @@ function findOrCreatePageByTitleEffect(
 			if (currentPage) {
 				if (
 					file.contentType === "page" &&
+					currentPage.id != topPageId &&
 					!currentPage.ancestors?.some((ancestor) => ancestor.id == topPageId)
 				) {
 					return Effect.fail(

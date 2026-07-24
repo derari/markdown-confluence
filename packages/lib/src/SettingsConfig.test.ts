@@ -91,6 +91,8 @@ test("loads settings from Effect ConfigProviders with CLI, env, file, default pr
 		folderToPublish: "env-folder",
 		contentRoot: expectedCliContentRoot,
 		firstHeadingPageTitle: true,
+		jiraUrl: "",
+		updateableUsers: [],
 	});
 });
 
@@ -108,6 +110,7 @@ test("keeps explicit false values from config providers", async () => {
 					folderToPublish: "file-folder",
 					contentRoot,
 					firstHeadingPageTitle: false,
+					jiraUrl: "",
 				}),
 			);
 

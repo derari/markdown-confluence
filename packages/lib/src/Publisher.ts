@@ -232,9 +232,10 @@ export class Publisher {
 		const confluenceClient = this.confluenceClient;
 		const adfProcessingPlugins = this.adfProcessingPlugins;
 		const getMyAccountId = () => this.myAccountId;
+		const updateableUsers = this.settings.updateableUsers;
 
 		return Effect.gen(function* () {
-			if (lastUpdatedBy !== getMyAccountId()) {
+			if (lastUpdatedBy !== getMyAccountId() && !updateableUsers.includes(lastUpdatedBy)) {
 				return yield* Effect.fail(
 					new Error(
 						`Page last updated by another user. Won't publish over their changes. MyAccountId: ${getMyAccountId()}, Last Updated By: ${lastUpdatedBy}`,

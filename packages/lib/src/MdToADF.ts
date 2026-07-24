@@ -13,13 +13,7 @@ import {
 } from "@atlaskit/adf-schema";
 import { ConfluenceSettings } from "./Settings";
 import { cleanUpUrlIfConfluence } from "./ConfluenceUrlParser";
-import {
-	p,
-	tableHeader,
-	tableRow,
-	table,
-	tableCell,
-} from "@atlaskit/adf-utils/builders";
+import { p, tableHeader, tableRow, table, tableCell } from "@atlaskit/adf-utils/builders";
 import { ADFEntity } from "@atlaskit/adf-utils/dist/types/types";
 
 const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
@@ -149,6 +143,19 @@ function processADF(
 					.replaceAll(/^\[[*]\]/g, "⭐️");
 			}
 
+			if (node.marks && node.marks[0] && node.marks[0].type === "code") {
+				const match = node.text?.match(/\[!!(\w+):(.+)]/);
+				if (match) {
+					return {
+						type: "status",
+						attrs: {
+							text: match[2],
+							color: getBadgeColor(match[1] ?? ""),
+						},
+					} as ADFEntity;
+				}
+			}
+
 			if (
 				!(
 					node.marks &&
@@ -245,15 +252,14 @@ function processADF(
 		},
 		panel: (node, _parent) => {
 			if (!node.attrs) return node;
+			if (node.attrs["panelType"] === "toc") {
+				return calloutAsToc();
+			}
 			if (node.attrs["panelType"] === "excerpt") {
 				return calloutAsExcerpt(node, frontmatter, confluenceBaseUrl);
 			}
 			if (node.attrs["panelType"] === "properties") {
-				return calloutAsProperties(
-					node,
-					frontmatter,
-					confluenceBaseUrl,
-				);
+				return calloutAsProperties(node, frontmatter, confluenceBaseUrl);
 			}
 			return node;
 		},
@@ -283,20 +289,14 @@ function convertSpecialBlocks(
 				lastHeader = i;
 			}
 		}
-		if (
-			child?.type === "paragraph" &&
-			child.content &&
-			child.content.length === 1
-		) {
+		if (child?.type === "paragraph" && child.content && child.content.length === 1) {
 			const paragraphChild = child.content[0];
 			if (paragraphChild?.type === "text" && paragraphChild.text) {
 				const text = paragraphChild.text.match(
 					/\^(excerpt|properties)(?:-(\d))?(?:-(.*))?/,
 				);
 				if (text) {
-					const start = text[2]
-						? headerIndices[parseInt(text[2])]! + 1
-						: lastHeader + 1;
+					const start = text[2] ? headerIndices[parseInt(text[2])]! + 1 : lastHeader + 1;
 					const extracted = {
 						content: node.content.slice(start, i),
 					} as ADFEntity;
@@ -309,10 +309,7 @@ function convertSpecialBlocks(
 							confluenceBaseUrl,
 							extracted.content!,
 						);
-						node.content[i] = asExcerptNode(
-							extracted,
-							text[3] || "Excerpt",
-						);
+						node.content[i] = asExcerptNode(extracted, text[3] || "Excerpt");
 					} else {
 						includeFrontmatterTable(
 							frontmatter,
@@ -320,10 +317,7 @@ function convertSpecialBlocks(
 							confluenceBaseUrl,
 							extracted.content!,
 						);
-						node.content[i] = asPropertiesNode(
-							extracted,
-							text[3] || "Properties",
-						);
+						node.content[i] = asPropertiesNode(extracted, text[3] || "Properties");
 					}
 				}
 			}
@@ -377,6 +371,61 @@ function asExcerptNode(node: ADFEntity, name: string) {
 		},
 	};
 	return node;
+}
+
+function calloutAsToc(): ADFEntity {
+	return {
+		type: "extension",
+		attrs: {
+			layout: "default",
+			extensionType: "com.atlassian.confluence.macro.core",
+			extensionKey: "toc",
+			parameters: {
+				macroParams: {
+					style: {
+						value: "default",
+					},
+				},
+				macroMetadata: {
+					title: "Table of Contents",
+				},
+			},
+		},
+	};
+}
+
+function getBadgeColor(key: string) {
+	switch (key) {
+		case "example":
+		case "hint":
+		case "important":
+		case "tip":
+			return "purple";
+		case "info":
+		case "note":
+		case "todo":
+			return "blue";
+		case "check":
+		case "success":
+		case "done":
+			return "green";
+		case "faq":
+		case "help":
+		case "question":
+		case "attention":
+		case "caution":
+		case "warning":
+			return "yellow";
+		case "bug":
+		case "danger":
+		case "error":
+		case "fail":
+		case "failure":
+		case "missing":
+			return "red";
+		default:
+			return "grey";
+	}
 }
 
 function calloutAsProperties(
@@ -478,11 +527,7 @@ function entryAsRow(
 			headerLabels.push(k);
 			const th = tableHeader({})(p(""));
 			// @ts-ignore
-			th.content = parseMarkdownToADFParagraph(
-				frontmatter,
-				`${k}`,
-				confluenceBaseUrl,
-			);
+			th.content = parseMarkdownToADFParagraph(frontmatter, `${k}`, confluenceBaseUrl);
 			// @ts-ignore
 			headers.push(th);
 			contentRows.forEach((row) => {
@@ -510,10 +555,7 @@ function entryAsRow(
 	return tableRow(values);
 }
 
-export function convertMDtoADF(
-	file: MarkdownFile,
-	settings: ConfluenceSettings,
-): LocalAdfFile {
+export function convertMDtoADF(file: MarkdownFile, settings: ConfluenceSettings): LocalAdfFile {
 	file.contents = file.contents.replace(frontmatterRegex, "");
 
 	const adfContent = parseMarkdownToADF(
