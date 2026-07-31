@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 import SparkMD5 from "spark-md5";
 import { lookup } from "mime-types";
 import { runEffect } from "./effects";
@@ -70,6 +70,20 @@ export function uploadBufferEffect(
 		const imageSize = getImageSize(fileBuffer);
 
 		const fileInCurrentAttachments = currentAttachments[uploadFilename];
+
+		// Debug: why does a rendered image (e.g. mermaid) count as changed?
+		// If it's found but the hashes differ, the render is not byte-stable.
+		yield* Console.log(
+			`[attachment compare] "${uploadFilename}" bytes=${fileBuffer.length} ` +
+				`newMd5=${currentFileMd5} ` +
+				(fileInCurrentAttachments
+					? `existingMd5=${fileInCurrentAttachments.filehash} ` +
+						`match=${fileInCurrentAttachments.filehash === currentFileMd5}`
+					: `existing=NOT_FOUND (attachment names on page: ${JSON.stringify(
+							Object.keys(currentAttachments),
+						)})`),
+		);
+
 		if (fileInCurrentAttachments?.filehash === currentFileMd5) {
 			return {
 				filename: uploadFilename,

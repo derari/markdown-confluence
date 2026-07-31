@@ -53,6 +53,11 @@ function allText(node: AdfNode): string[] {
 	return [...here, ...nested];
 }
 
+/** Every header/cell node in a table. */
+function allCells(table: AdfNode): AdfNode[] {
+	return (table.content ?? []).flatMap((row) => row.content ?? []);
+}
+
 describe("yaml-table code block", () => {
 	test("renders a table from an array of uniform objects", () => {
 		const doc = toAdf(
@@ -134,5 +139,38 @@ describe("yaml-table code block", () => {
 		const doc = toAdf(fence("yaml", "name: Alice\nrole: Admin"));
 		expect(firstTable(doc)).toBeUndefined();
 		expect((doc.content ?? []).some((node) => node.type === "codeBlock")).toBe(true);
+	});
+});
+
+// A yaml table is just an alternative syntax for a markdown table: both must
+// share the same cell behaviour (no fixed widths, same "<"/"^" merging).
+describe("table behaviour parity (yaml vs markdown)", () => {
+	test("yaml table cells carry no fixed colwidth", () => {
+		const table = firstTable(toAdf(fence("yaml-table", "- name: Alice\n  role: Admin")))!;
+		for (const cell of allCells(table)) {
+			expect(cell.attrs).toBeDefined();
+			expect(cell.attrs).not.toHaveProperty("colwidth");
+		}
+	});
+
+	test("markdown table cells carry no fixed colwidth", () => {
+		const md = ["| name | role |", "| --- | --- |", "| Alice | Admin |"].join("\n");
+		const table = firstTable(toAdf(md))!;
+		for (const cell of allCells(table)) {
+			expect(cell.attrs).not.toHaveProperty("colwidth");
+		}
+	});
+
+	test("markdown tables honour the same '^' rowspan merge marker", () => {
+		const md = ["| a | b |", "| --- | --- |", "| 1 | 2 |", "| 3 | ^ |"].join("\n");
+		const table = firstTable(toAdf(md))!;
+		const rows = table.content ?? [];
+
+		// The "2" cell absorbs the "^" below it, spanning two rows...
+		expect(cellText(rows[1]!.content![1]!)).toBe("2");
+		expect(rows[1]!.content![1]!.attrs?.["rowspan"]).toBe(2);
+		// ...and the "^" marker cell is removed, so no marker text survives.
+		expect((rows[2]!.content ?? []).map(cellText)).toEqual(["3"]);
+		expect(allText(table)).not.toContain("^");
 	});
 });

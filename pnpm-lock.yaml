@@ -170,9 +170,12 @@ importers:
       mermaid:
         specifier: ^11.15.0
         version: 11.15.0
+      mermaid-bpmn:
+        specifier: ^1.1.0
+        version: 1.1.0(mermaid@11.15.0)
       mermaid-fmc:
-        specifier: ^1.0.0
-        version: 1.0.0(mermaid@11.15.0)
+        specifier: ^1.1.0
+        version: 1.1.0(mermaid@11.15.0)
       uuid:
         specifier: ^14.0.0
         version: 14.0.0
@@ -200,9 +203,12 @@ importers:
       mermaid:
         specifier: 11.15.0
         version: 11.15.0
+      mermaid-bpmn:
+        specifier: 1.1.0
+        version: 1.1.0(mermaid@11.15.0)
       mermaid-fmc:
-        specifier: 1.0.0
-        version: 1.0.0(mermaid@11.15.0)
+        specifier: 1.1.0
+        version: 1.1.0(mermaid@11.15.0)
       puppeteer:
         specifier: 25.0.2
         version: 25.0.2(typescript@6.0.3)
@@ -2460,8 +2466,14 @@ packages:
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
 
-  mermaid-fmc@1.0.0:
-    resolution: {integrity: sha512-z4Jgx+tWVaFZMu2+t2ZHr1oMKhZliO6z3k7pUvfchzfGM32t7A8SR2v0JzGKMzCO3Hpzw+mJRxd07KAp5yKu8g==}
+  mermaid-bpmn@1.1.0:
+    resolution: {integrity: sha512-Mr0fPZlM8Ne4i+Bir8RNKqiX7ksf4XfkPRTPuu94XeItw6vQ9d6jVaHkxFWX/ijyDyfQYhKd3Lg7yWq5tKcyTQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      mermaid: ^11
+
+  mermaid-fmc@1.1.0:
+    resolution: {integrity: sha512-ejvNXGLUO/G/4aEdFMEsOXJzgYd69EOCTcIFHF9ikU3WFfZH9IuVRQ7cOSTKie+wTuwGBjAly5NXxXP9gloRkA==}
     peerDependencies:
       mermaid: ^11
 
@@ -5326,7 +5338,13 @@ snapshots:
 
   merge-descriptors@1.0.3: {}
 
-  mermaid-fmc@1.0.0(mermaid@11.15.0):
+  mermaid-bpmn@1.1.0(mermaid@11.15.0):
+    dependencies:
+      '@iconify/utils': 3.1.4
+      elkjs: 0.12.0
+      mermaid: 11.15.0
+
+  mermaid-fmc@1.1.0(mermaid@11.15.0):
     dependencies:
       '@iconify/utils': 3.1.4
       elkjs: 0.12.0

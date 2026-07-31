@@ -1,5 +1,5 @@
 import { JSONDocNode } from "@atlaskit/editor-json-transformer";
-import { Effect, Layer } from "effect";
+import { Console, Effect, Layer } from "effect";
 import { AlwaysADFProcessingPlugins } from "./ADFProcessingPlugins";
 import {
 	ADFProcessingPlugin,
@@ -278,7 +278,7 @@ export class Publisher {
 				}, {});
 
 			const workspace = yield* MarkdownWorkspaceService;
-			let processedAttachment = false;
+			let uploadedAttachment = false;
 			const supportFunctions = trackProcessedAttachments(
 				createPublisherFunctions(
 					confluenceClient,
@@ -288,8 +288,11 @@ export class Publisher {
 					currentAttachments,
 				),
 				(uploaded) => {
-					if (uploaded) {
-						processedAttachment = true;
+					// Only count an attachment that was actually (re-)uploaded.
+					// "existing" means the hash matched and nothing was sent, so it
+					// must not flip imageResult to "updated".
+					if (uploaded?.status === "uploaded") {
+						uploadedAttachment = true;
 					}
 				},
 			);
@@ -299,22 +302,17 @@ export class Publisher {
 				supportFunctions,
 			);
 
-			if (processedAttachment) {
+			if (uploadedAttachment) {
 				result.imageResult = "updated";
 			}
 
-			const existingPageDetails = {
-				title: existingPageData.pageTitle,
-				type: existingPageData.contentType,
-				...(adfFile.contentType === "blogpost" || adfFile.dontChangeParentPageId
-					? {}
-					: { ancestors: existingPageData.ancestors }),
-			};
+			const skipAncestorCheck =
+				adfFile.contentType === "blogpost" || adfFile.dontChangeParentPageId;
 
 			const newPageDetails = {
 				title: adfFile.pageTitle,
 				type: adfFile.contentType,
-				...(adfFile.contentType === "blogpost" || adfFile.dontChangeParentPageId
+				...(skipAncestorCheck
 					? {}
 					: {
 							ancestors: ancestors.map((ancestor) => ({
@@ -323,10 +321,34 @@ export class Publisher {
 						}),
 			};
 
+			// Confluence returns the full ancestor chain (space root -> direct
+			// parent), but page placement is determined solely by the direct
+			// parent, which is all we set. Compare only the direct parent (the
+			// last ancestor) so an unchanged page is not detected as "moved".
+			const existingPageComparison = {
+				title: existingPageData.pageTitle,
+				type: existingPageData.contentType,
+				...(skipAncestorCheck
+					? {}
+					: { parentId: existingPageData.ancestors.at(-1)?.id }),
+			};
+			const newPageComparison = {
+				title: adfFile.pageTitle,
+				type: adfFile.contentType,
+				...(skipAncestorCheck ? {} : { parentId: ancestors.at(-1) }),
+			};
+
+			// Log both sides of the ADF comparison so a sync decision can be
+			// inspected: the page's current ADF vs. the ADF generated locally.
+			yield* Console.log(`[ADF compare] "${adfFile.pageTitle}" (page ${adfFile.pageId})`);
+
 			if (
 				!adfEqual(existingPageData.adfContent, adfToUpload) ||
-				!isEqual(existingPageDetails, newPageDetails)
+				!isEqual(existingPageComparison, newPageComparison)
 			) {
+				yield* Console.log(`Page details \n`
+					+ JSON.stringify(existingPageComparison, null, 2) + "\n"
+					+ JSON.stringify(newPageComparison, null, 2));
 				result.contentResult = "updated";
 				const updateContentDetails = {
 					...newPageDetails,

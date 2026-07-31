@@ -150,6 +150,7 @@ function processADF(
 					return {
 						type: "status",
 						attrs: {
+							style: "bold",
 							text: match[2],
 							color: getBadgeColor(match[1] ?? ""),
 						},
@@ -199,17 +200,21 @@ function processADF(
 			) {
 				delete node.attrs["isNumberColumnEnabled"];
 			}
+			// Apply "<"/"^" cell-merge markers for every table, so markdown and
+			// yaml tables behave identically.
+			mergeCells(node as unknown as ADFEntity);
 			return node;
 		},
 		tableRow: (node, _parent) => {
 			return node;
 		},
+		// Default colspan/rowspan to 1 but keep any set by mergeCells. No fixed
+		// colwidth: let Confluence auto-size columns (same as markdown tables).
 		tableHeader: (node, _parent) => {
 			const attrs = node.attrs ?? {};
 			node.attrs = {
 				colspan: (attrs["colspan"] as number) || 1,
 				rowspan: (attrs["rowspan"] as number) || 1,
-				colwidth: [340],
 			};
 			return node;
 		},
@@ -218,7 +223,6 @@ function processADF(
 			node.attrs = {
 				colspan: (attrs["colspan"] as number) || 1,
 				rowspan: (attrs["rowspan"] as number) || 1,
-				colwidth: [340],
 			};
 			return node;
 		},
@@ -387,12 +391,12 @@ function asExcerptNode(node: ADFEntity, name: string) {
 				},
 			},
 			macroMetadata: {
-				macroId: {
-					value: "f638cbb0-4cf8-403a-af66-7a5be22b744e",
-				},
-				schemaVersion: {
-					value: "1",
-				},
+				// macroId: {
+				// 	value: "f638cbb0-4cf8-403a-af66-7a5be22b744e",
+				// },
+				// schemaVersion: {
+				// 	value: "1",
+				// },
 				title: "Excerpt",
 			},
 		},
@@ -486,12 +490,12 @@ function asPropertiesNode(node: ADFEntity, key: string) {
 				},
 			},
 			macroMetadata: {
-				macroId: {
-					value: "fa274a790b8e7d05612ca1a9de859c8b1063d72d6a8f8dcd59b651715fe220b6",
-				},
-				schemaVersion: {
-					value: "1",
-				},
+				// macroId: {
+				// 	value: "fa274a790b8e7d05612ca1a9de859c8b1063d72d6a8f8dcd59b651715fe220b6",
+				// },
+				// schemaVersion: {
+				// 	value: "1",
+				// },
 				title: "Page Properties",
 			},
 		},
@@ -614,6 +618,9 @@ function yamlToTable(
 	const t = table();
 	// @ts-ignore
 	t.content = rows;
+	// The `table` traverse handler is not re-invoked for a node returned from
+	// the codeBlock handler, so merge here too. (For markdown tables the handler
+	// does the merging; running it twice is a harmless no-op once markers are gone.)
 	mergeCells(t as unknown as ADFEntity);
 	return t as unknown as ADFEntity;
 }

@@ -1,7 +1,8 @@
 import { BrowserWindow } from "@electron/remote";
 import { ChartData, MermaidRenderer } from "@markdown-confluence/lib";
 import mermaid, { MermaidConfig } from "mermaid";
-import fmc, { registerIconPacks, type IconPack } from "mermaid-fmc";
+import fmc, { registerIconPacks as registerFmcIconPacks, type IconPack } from "mermaid-fmc";
+import bpmn, { registerIconPacks as registerBpmnIconPacks } from "mermaid-bpmn";
 import lucideIcons from "@iconify-json/lucide/icons.json";
 import noniconsIcons from "@iconify-json/nonicons/icons.json";
 import deviconIcons from "@iconify-json/devicon-plain/icons.json";
@@ -9,17 +10,20 @@ import { v4 as uuidv4 } from "uuid";
 
 let mermaidRenderHtml: string;
 
-// Register FMC as an external diagram once. Registration is async and global,
-// so we keep the promise and await it before rendering.
-const externalDiagramsRegistered = mermaid.registerExternalDiagrams([fmc]);
+// Register FMC and BPMN as external diagrams once. Registration is async and
+// global, so we keep the promise and await it before rendering.
+const externalDiagramsRegistered = mermaid.registerExternalDiagrams([fmc, bpmn]);
 
 // Bundle the icon packs at compile time (eager imports, not lazy loaders) so
-// FMC diagrams that use icons render fully offline with no runtime fetch.
-registerIconPacks([
+// diagrams that use icons render fully offline with no runtime fetch. FMC and
+// BPMN each keep their own icon registry, so register the packs with both.
+const iconPacks: IconPack[] = [
 	{ name: "lucide", icons: lucideIcons as NonNullable<IconPack["icons"]> },
 	{ name: "nonicons", icons: noniconsIcons as NonNullable<IconPack["icons"]> },
 	{ name: "devicon", icons: deviconIcons as NonNullable<IconPack["icons"]> },
-]);
+];
+registerFmcIconPacks(iconPacks);
+registerBpmnIconPacks(iconPacks);
 
 const pluginMermaidConfig: MermaidConfig = {
 	theme: "base",
@@ -27,17 +31,17 @@ const pluginMermaidConfig: MermaidConfig = {
 		background: "#ffffff",
 		mainBkg: "#ddebff",
 		primaryColor: "#ddebff",
-		primaryTextColor: "#192b50",
+		primaryTextColor: "#222222", // "#192b50"
 		primaryBorderColor: "#0052cc",
-		secondaryColor: "#ff8f73",
+		secondaryColor: "#75C1FF", // "#ff8f73",
 		secondaryTextColor: "#192b50",
-		secondaryBorderColor: "#df360c",
+		secondaryBorderColor: "#0B71BF", // "#df360c",
 		tertiaryColor: "#c0b6f3",
 		tertiaryTextColor: "#fefefe",
 		tertiaryBorderColor: "#5243aa",
 		noteBkgColor: "#ffc403",
 		noteTextColor: "#182a4e",
-		textColor: "#ff0000",
+		textColor: "#222222", // "#192b50"
 		titleColor: "#0052cc",
 	},
 };

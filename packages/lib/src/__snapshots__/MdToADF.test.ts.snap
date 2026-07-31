@@ -380,9 +380,6 @@ exports[`parses 'file1.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -401,9 +398,6 @@ exports[`parses 'file1.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -427,9 +421,6 @@ exports[`parses 'file1.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -448,9 +439,6 @@ exports[`parses 'file1.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -474,9 +462,6 @@ exports[`parses 'file1.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -495,9 +480,6 @@ exports[`parses 'file1.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -589,9 +571,6 @@ exports[`parses 'file2.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -610,9 +589,6 @@ exports[`parses 'file2.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -636,9 +612,6 @@ exports[`parses 'file2.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -657,9 +630,6 @@ exports[`parses 'file2.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -748,9 +718,6 @@ exports[`parses 'file3.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -769,9 +736,6 @@ exports[`parses 'file3.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -1372,9 +1336,6 @@ exports[`parses 'tables.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -1393,9 +1354,6 @@ exports[`parses 'tables.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -1419,9 +1377,6 @@ exports[`parses 'tables.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
@@ -1440,9 +1395,6 @@ exports[`parses 'tables.md' 1`] = `
               {
                 "attrs": {
                   "colspan": 1,
-                  "colwidth": [
-                    340,
-                  ],
                   "rowspan": 1,
                 },
                 "content": [
