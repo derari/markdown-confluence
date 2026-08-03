@@ -73,9 +73,11 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 					chart.data,
 					mermaidConfig,
 				);
+
+				const scale = chart.data.includes('erDiagram') ? 2 : 1;
 				await page.setViewport({
-					width: result.width,
-					height: result.height,
+					width: scale * result.width,
+					height: scale * result.height,
 				});
 				const imageBuffer = Buffer.from(await page.screenshot());
 				capturedCharts.set(chart.name, imageBuffer);
