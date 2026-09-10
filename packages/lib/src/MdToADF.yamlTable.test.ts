@@ -30,6 +30,7 @@ interface AdfNode {
 	type: string;
 	text?: string;
 	attrs?: Record<string, unknown>;
+	marks?: { type: string; attrs?: Record<string, unknown> }[];
 	content?: AdfNode[];
 }
 
@@ -172,5 +173,34 @@ describe("table behaviour parity (yaml vs markdown)", () => {
 		// ...and the "^" marker cell is removed, so no marker text survives.
 		expect((rows[2]!.content ?? []).map(cellText)).toEqual(["3"]);
 		expect(allText(table)).not.toContain("^");
+	});
+});
+
+// Font size is the one place yaml and markdown tables deliberately differ:
+// yaml tables are data-dense, so their cells are rendered one size down.
+describe("table cell font size", () => {
+	test("yaml table cell paragraphs are marked small", () => {
+		const table = firstTable(toAdf(fence("yaml-table", "- name: Alice\n  role: Admin")))!;
+		for (const cell of allCells(table)) {
+			for (const paragraph of cell.content ?? []) {
+				expect(paragraph.type).toBe("paragraph");
+				expect(paragraph.marks).toContainEqual({
+					type: "fontSize",
+					attrs: { fontSize: "small" },
+				});
+			}
+		}
+	});
+
+	test("markdown table cell paragraphs keep the default font size", () => {
+		const md = ["| name | role |", "| --- | --- |", "| Alice | Admin |"].join("\n");
+		const table = firstTable(toAdf(md))!;
+		for (const cell of allCells(table)) {
+			for (const paragraph of cell.content ?? []) {
+				expect(paragraph.marks ?? []).not.toContainEqual(
+					expect.objectContaining({ type: "fontSize" }),
+				);
+			}
+		}
 	});
 });

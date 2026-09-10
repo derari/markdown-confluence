@@ -74,7 +74,10 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 					mermaidConfig,
 				);
 
-				const scale = chart.data.includes('erDiagram') ? 2 : 1;
+				const scaledDiagram = chart.data.includes('erDiagram')
+						|| chart.data.includes('sequenceDiagram')
+						|| chart.data.includes('%% zoom');
+				const scale = scaledDiagram ? 2 : 1;
 				await page.setViewport({
 					width: scale * result.width,
 					height: scale * result.height,

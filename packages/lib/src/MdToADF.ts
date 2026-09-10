@@ -544,6 +544,19 @@ function includeFrontmatterTable(
 	return key;
 }
 
+// Yaml-generated tables are usually data-dense, so their cell paragraphs are
+// rendered one size down. Markdown tables keep the default font size.
+function markSmallFont(content: (ADFEntity | undefined)[] | undefined) {
+	for (const node of content ?? []) {
+		if (node?.type !== "paragraph") continue;
+		node.marks = [
+			...(node.marks ?? []),
+			{ type: "fontSize", attrs: { fontSize: "small" } },
+		];
+	}
+	return content;
+}
+
 function entryAsRow(
 	data: any,
 	headerLabels: string[],
@@ -558,7 +571,9 @@ function entryAsRow(
 			headerLabels.push(k);
 			const th = tableHeader({})(p(""));
 			// @ts-ignore
-			th.content = parseMarkdownToADFParagraph(frontmatter, `${k}`, confluenceBaseUrl);
+			th.content = markSmallFont(
+				parseMarkdownToADFParagraph(frontmatter, `${k}`, confluenceBaseUrl),
+			);
 			// @ts-ignore
 			headers.push(th);
 			contentRows.forEach((row) => {
@@ -571,10 +586,12 @@ function entryAsRow(
 		if (data[label]) {
 			const tv = tableCell({})(p(""));
 			// @ts-ignore
-			tv.content = parseMarkdownToADFParagraph(
-				frontmatter,
-				`${data[label]}`,
-				confluenceBaseUrl,
+			tv.content = markSmallFont(
+				parseMarkdownToADFParagraph(
+					frontmatter,
+					`${data[label]}`,
+					confluenceBaseUrl,
+				),
 			);
 			// @ts-ignore
 			values.push(tv);
