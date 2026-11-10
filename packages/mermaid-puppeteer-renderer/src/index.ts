@@ -75,6 +75,7 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 				);
 
 				const scaledDiagram = chart.data.includes('erDiagram')
+						|| chart.data.includes('flowchart')
 						|| chart.data.includes('sequenceDiagram')
 						|| chart.data.includes('%% zoom');
 				const scale = scaledDiagram ? 2 : 1;
