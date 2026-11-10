@@ -545,14 +545,18 @@ function includeFrontmatterTable(
 }
 
 // Yaml-generated tables are usually data-dense, so their cell paragraphs are
-// rendered one size down. Markdown tables keep the default font size.
+// rendered one size down. Nested block content counts too: a paragraph inside a
+// list item carries its own size. Markdown tables keep the default font size.
 function markSmallFont(content: (ADFEntity | undefined)[] | undefined) {
 	for (const node of content ?? []) {
-		if (node?.type !== "paragraph") continue;
-		node.marks = [
-			...(node.marks ?? []),
-			{ type: "fontSize", attrs: { fontSize: "small" } },
-		];
+		if (!node) continue;
+		if (node.type === "paragraph") {
+			node.marks = [
+				...(node.marks ?? []),
+				{ type: "fontSize", attrs: { fontSize: "small" } },
+			];
+		}
+		markSmallFont(node.content);
 	}
 	return content;
 }

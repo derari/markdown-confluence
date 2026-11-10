@@ -59,6 +59,15 @@ function allCells(table: AdfNode): AdfNode[] {
 	return (table.content ?? []).flatMap((row) => row.content ?? []);
 }
 
+/** Every paragraph anywhere in the tree, including ones nested in list items. */
+function allParagraphs(node: AdfNode): AdfNode[] {
+	const here = node.type === "paragraph" ? [node] : [];
+	const nested = (node.content ?? []).flatMap(allParagraphs);
+	return [...here, ...nested];
+}
+
+const smallFont = { type: "fontSize", attrs: { fontSize: "small" } };
+
 describe("yaml-table code block", () => {
 	test("renders a table from an array of uniform objects", () => {
 		const doc = toAdf(
@@ -182,13 +191,29 @@ describe("table cell font size", () => {
 	test("yaml table cell paragraphs are marked small", () => {
 		const table = firstTable(toAdf(fence("yaml-table", "- name: Alice\n  role: Admin")))!;
 		for (const cell of allCells(table)) {
-			for (const paragraph of cell.content ?? []) {
-				expect(paragraph.type).toBe("paragraph");
-				expect(paragraph.marks).toContainEqual({
-					type: "fontSize",
-					attrs: { fontSize: "small" },
-				});
+			const paragraphs = allParagraphs(cell);
+			expect(paragraphs.length).toBeGreaterThan(0);
+			for (const paragraph of paragraphs) {
+				expect(paragraph.marks).toContainEqual(smallFont);
 			}
+		}
+	});
+
+	test("paragraphs nested in a list inside a yaml cell are marked too", () => {
+		const table = firstTable(
+			toAdf(fence("yaml-table", "- name: Alice\n  notes: |-\n    - one\n    - two")),
+		)!;
+		const notes = (table.content ?? [])[1]!.content![1]!;
+		// The cell holds a bullet list, so its paragraphs sit two levels down.
+		expect(notes.content?.[0]?.type).toBe("bulletList");
+
+		const paragraphs = allParagraphs(notes);
+		expect(paragraphs.map((paragraph) => paragraph.content?.[0]?.text)).toEqual([
+			"one",
+			"two",
+		]);
+		for (const paragraph of paragraphs) {
+			expect(paragraph.marks).toContainEqual(smallFont);
 		}
 	});
 
@@ -196,7 +221,7 @@ describe("table cell font size", () => {
 		const md = ["| name | role |", "| --- | --- |", "| Alice | Admin |"].join("\n");
 		const table = firstTable(toAdf(md))!;
 		for (const cell of allCells(table)) {
-			for (const paragraph of cell.content ?? []) {
+			for (const paragraph of allParagraphs(cell)) {
 				expect(paragraph.marks ?? []).not.toContainEqual(
 					expect.objectContaining({ type: "fontSize" }),
 				);
