@@ -2,14 +2,13 @@
 export const MarkdownToConfluenceCodeBlockLanguageMap: {
 	[key: string]: string;
 } = {
-	js: "javascript",
-	bash: "shell",
 	abap: "abap",
 	actionscript: "actionscript",
 	ada: "ada",
 	applescript: "applescript",
 	arduino: "arduino",
 	autoit: "autoit",
+	bash: "shell",
 	c: "c",
 	"c++": "cpp",
 	clojure: "clojure",
@@ -34,6 +33,7 @@ export const MarkdownToConfluenceCodeBlockLanguageMap: {
 	java: "java",
 	javafx: "javafx",
 	javascript: "javascript",
+	js: "javascript",
 	json: "json",
 	jsx: "jsx",
 	julia: "julia",
@@ -63,7 +63,7 @@ export const MarkdownToConfluenceCodeBlockLanguageMap: {
 	sass: "sass",
 	scala: "scala",
 	scheme: "scheme",
-	shell: "bash",
+	shell: "shell",
 	smalltalk: "smalltalk",
 	splunkspl: "splunkspl",
 	sql: "sql",
