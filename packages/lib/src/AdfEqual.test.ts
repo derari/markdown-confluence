@@ -34,6 +34,10 @@ describe("adfEqual ignores Confluence server-side canonicalisation", () => {
 		expect(adfEqual(docWithLink(`${BASE}/Provisioned+table`), docWithLink(BASE))).toBe(true);
 	});
 
+	test("a current link without anchor equals a generated link with one", () => {
+		expect(adfEqual(docWithLink(BASE), docWithLink(`${BASE}#SSL-Zertifikat`))).toBe(true);
+	});
+
 	test("inline cards are equal with or without the trailing title slug", () => {
 		expect(
 			adfEqual(docWithInlineCard(`${BASE}/Provisioned+table`), docWithInlineCard(BASE)),
@@ -42,6 +46,27 @@ describe("adfEqual ignores Confluence server-side canonicalisation", () => {
 
 	test("a table with no layout equals one with the default layout", () => {
 		expect(adfEqual(docWithTable(), docWithTable({ layout: "default" }))).toBe(true);
+	});
+
+	test("empty text nodes dropped by the server are ignored (both directions)", () => {
+		const withEmpty: ADFEntity = {
+			type: "doc",
+			content: [
+				{
+					type: "paragraph",
+					content: [
+						{ type: "text", text: "a" },
+						{ type: "text", text: "" },
+					],
+				},
+			],
+		};
+		const withoutEmpty: ADFEntity = {
+			type: "doc",
+			content: [{ type: "paragraph", content: [{ type: "text", text: "a" }] }],
+		};
+		expect(adfEqual(withoutEmpty, withEmpty)).toBe(true);
+		expect(adfEqual(withEmpty, withoutEmpty)).toBe(true);
 	});
 
 	test("a server-assigned attrs.localId is ignored", () => {
@@ -90,6 +115,11 @@ describe("adfEqual still detects real differences", () => {
 	test("links to different pages are not equal", () => {
 		const other = "https://example.atlassian.net/wiki/spaces/VT/pages/99999999";
 		expect(adfEqual(docWithLink(BASE), docWithLink(other))).toBe(false);
+	});
+
+	test("a changed or removed anchor is still a difference", () => {
+		expect(adfEqual(docWithLink(`${BASE}#A`), docWithLink(`${BASE}#B`))).toBe(false);
+		expect(adfEqual(docWithLink(`${BASE}#A`), docWithLink(BASE))).toBe(false);
 	});
 
 	test("non-Confluence links keep their full path", () => {

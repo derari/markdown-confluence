@@ -55,56 +55,63 @@
  * [1, 3] !== [1, 2] // same result as without checkDataOrder
  *
  */
-// eslint-disable-next-line @typescript-eslint/no-inferrable-types, @typescript-eslint/no-explicit-any
-export const isEqual = (obj1: any, obj2: any): boolean => {
-	if (obj1 === null || obj2 === null) {
-		return obj1 === obj2;
+export interface Mismatch {
+	/** Location of the mismatch, e.g. `$.content[2].attrs.url`. */
+	path: string;
+	first: unknown;
+	second: unknown;
+}
+
+/**
+ * The comparison stops at the first difference. When `mismatches` is given,
+ * that difference (at its deepest location) is pushed into it, so it receives
+ * at most one entry. A property or array element present on only one side is
+ * reported with `undefined` for the missing side.
+ *
+ * When `treatAsEqual` returns true for a pair of values, they are considered
+ * equal without further comparison.
+ */
+export const isEqual = (
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	obj1: any,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	obj2: any,
+	mismatches?: Mismatch[],
+	path = "$",
+	treatAsEqual?: (first: unknown, second: unknown, path: string) => boolean,
+): boolean => {
+	const mismatch = (): false => {
+		mismatches?.push({ path, first: obj1, second: obj2 });
+		return false;
+	};
+
+	if (treatAsEqual?.(obj1, obj2, path)) {
+		return true;
 	}
 
-	if (typeof obj1 !== "object" || typeof obj2 !== "object") {
-		return obj1 === obj2;
+	if (obj1 === null || obj2 === null || typeof obj1 !== "object" || typeof obj2 !== "object") {
+		return obj1 === obj2 || mismatch();
 	}
 
-	if (Array.isArray(obj1) && Array.isArray(obj2)) {
-		if (obj1.length !== obj2.length) {
+	const isArray = Array.isArray(obj1);
+	if (isArray !== Array.isArray(obj2)) {
+		return mismatch();
+	}
+
+	// Array indices are compared like properties; `length` is implied by them.
+	const props = new Set(
+		[...Object.getOwnPropertyNames(obj1), ...Object.getOwnPropertyNames(obj2)].filter(
+			(prop) => !isArray || prop !== "length",
+		),
+	);
+
+	for (const prop of props) {
+		const childPath = isArray ? `${path}[${prop}]` : `${path}.${prop}`;
+		if (!Object.hasOwn(obj1, prop) || !Object.hasOwn(obj2, prop)) {
+			mismatches?.push({ path: childPath, first: obj1[prop], second: obj2[prop] });
 			return false;
 		}
-
-		for (let index = 0; index < obj1.length; index++) {
-			const val1 = obj1[index];
-			const val2 = obj2[index];
-
-			if (typeof val1 === "object" && typeof val2 === "object") {
-				if (isEqual(val1, val2)) {
-					continue;
-				} else {
-					return false;
-				}
-			}
-			if (val1 !== val2) {
-				return false;
-			}
-		}
-	}
-
-	const obj1Props = Object.getOwnPropertyNames(obj1);
-	const obj2Props = Object.getOwnPropertyNames(obj2);
-	if (obj1Props.length !== obj2Props.length) {
-		return false;
-	}
-
-	for (const prop of obj1Props) {
-		const val1 = obj1[prop];
-		const val2 = obj2[prop];
-
-		if (typeof val1 === "object" && typeof val2 === "object") {
-			if (isEqual(val1, val2)) {
-				continue;
-			} else {
-				return false;
-			}
-		}
-		if (val1 !== val2) {
+		if (!isEqual(obj1[prop], obj2[prop], mismatches, childPath, treatAsEqual)) {
 			return false;
 		}
 	}

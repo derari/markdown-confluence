@@ -2,7 +2,7 @@ import sortAny from "sort-any";
 import { mapValues } from "lodash-es";
 import { traverse } from "@atlaskit/adf-utils/traverse";
 import { ADFEntity, ADFEntityMark } from "@atlaskit/adf-utils/types";
-import { isEqual } from "./isEqual";
+import { isEqual, Mismatch } from "./isEqual";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sortDeep = (object: unknown): any => {
@@ -75,6 +75,12 @@ function normalizeAdf(adf: ADFEntity) {
 			if (node.type === "inlineCard" && typeof node.attrs?.["url"] === "string") {
 				node.attrs["url"] = stripConfluencePageTitle(node.attrs["url"]);
 			}
+			if (Array.isArray(node.content)) {
+				// Confluence drops empty text nodes, so ignore them on both sides.
+				node.content = node.content.filter(
+					(child) => !(child?.type === "text" && child.text === ""),
+				);
+			}
 			if (node.type === "table") {
 				node.attrs = { layout: "default", ...(node.attrs ?? {}) };
 			}
@@ -102,6 +108,20 @@ function normalizeAdf(adf: ADFEntity) {
 	});
 }
 
+// Confluence drops the page anchor ("#Heading") from links it stores, so a
+// current link without an anchor equals a generated link that only adds one.
+const linkPathRegex = /\.attrs\.(?:href|url)$/;
+
+function ignoreDroppedAnchor(current: unknown, generated: unknown, path: string): boolean {
+	return (
+		typeof current === "string" &&
+		typeof generated === "string" &&
+		linkPathRegex.test(path) &&
+		!current.includes("#") &&
+		generated.startsWith(current + "#")
+	);
+}
+
 function cloneAdf(adf: ADFEntity): ADFEntity {
 	return JSON.parse(JSON.stringify(adf));
 }
@@ -111,13 +131,22 @@ export function adfEqual(first: ADFEntity, second: ADFEntity): boolean {
 	// is about to be uploaded).
 	const a = normalizeAdf(cloneAdf(first));
 	const b = normalizeAdf(cloneAdf(second));
-	const equal = isEqual(a, b);
+	const mismatches: Mismatch[] = [];
+	const equal = isEqual(a, b, mismatches, "$", ignoreDroppedAnchor);
 	// Debug: use native console.log (this is a plain function, not an Effect, so
 	// effect's Console.log would build an Effect that never runs). Logs the
 	// NORMALISED ADF that is actually compared, so a diff reveals the mismatch.
 	if (!equal) {
 		console.log("[adfEqual] normalised current page ADF:\n" + JSON.stringify(a, null, 2));
 		console.log("[adfEqual] normalised generated ADF:\n" + JSON.stringify(b, null, 2));
+		console.log("[adfEqual] Mismatches:");
+		for (const { path, first, second } of mismatches) {
+			console.log(
+				`[adfEqual] at ${path}:\n` +
+					`  current:   ${JSON.stringify(first, null, 2)}\n` +
+					`  generated: ${JSON.stringify(second, null, 2)}`,
+			);
+		}
 	} else {
 		console.log("[adfEqual] normalised ADF is equal");
 	}
