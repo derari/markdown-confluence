@@ -21,6 +21,12 @@ export interface ChartData {
 
 export interface MermaidRenderer {
 	captureMermaidCharts(charts: ChartData[]): Promise<Map<string, Buffer>>;
+	/**
+	 * Image pixels per displayed pixel. A renderer that captures at a higher
+	 * pixel density (for sharpness) sets this so Confluence shows the chart at
+	 * its pixel size divided by this ratio. Defaults to 1.
+	 */
+	readonly pixelRatio?: number;
 }
 
 export class MermaidRendererPlugin implements ADFProcessingPlugin<
@@ -94,6 +100,7 @@ export class MermaidRendererPlugin implements ADFProcessingPlugin<
 	}
 	load(adf: JSONDocNode, imageMap: Record<string, UploadedImageData | null>): JSONDocNode {
 		let afterAdf = adf as ADFEntity;
+		const pixelRatio = this.mermaidRenderer.pixelRatio ?? 1;
 
 		afterAdf =
 			traverse(afterAdf, {
@@ -112,6 +119,11 @@ export class MermaidRendererPlugin implements ADFProcessingPlugin<
 						if (mappedImage) {
 							node.type = "mediaSingle";
 							node.attrs["layout"] = "center";
+							if (pixelRatio !== 1 && mappedImage.width > 0) {
+								// Display the high-density image at its logical size.
+								node.attrs["width"] = Math.round(mappedImage.width / pixelRatio);
+								node.attrs["widthType"] = "pixel";
+							}
 							if (node.content) {
 								node.content = [
 									{

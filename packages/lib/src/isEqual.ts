@@ -69,7 +69,8 @@ export interface Mismatch {
  * reported with `undefined` for the missing side.
  *
  * When `treatAsEqual` returns true for a pair of values, they are considered
- * equal without further comparison.
+ * equal without further comparison. It is also consulted for a property
+ * present on only one side (with `undefined` for the missing side).
  */
 export const isEqual = (
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,6 +109,9 @@ export const isEqual = (
 	for (const prop of props) {
 		const childPath = isArray ? `${path}[${prop}]` : `${path}.${prop}`;
 		if (!Object.hasOwn(obj1, prop) || !Object.hasOwn(obj2, prop)) {
+			if (treatAsEqual?.(obj1[prop], obj2[prop], childPath)) {
+				continue;
+			}
 			mismatches?.push({ path: childPath, first: obj1[prop], second: obj2[prop] });
 			return false;
 		}

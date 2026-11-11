@@ -9,7 +9,23 @@ interface RemoteWindowedCustomFunctions {
 	) => Promise<{ width: number; height: number }>;
 }
 
+// Charts are captured at this pixel density by default and shown in Confluence
+// at 1/DEFAULT_SCALE of their pixel size, i.e. at their natural size.
+const DEFAULT_SCALE = 2;
+
+// "%% zoom 3" (or "%% zoom: 1.5") inside a chart overrides the capture scale.
+// Since display size is pixel size / DEFAULT_SCALE, a zoom above the default
+// also shows the chart larger.
+const zoomRegex = /^\s*%%\s*zoom\s*:?\s*(\d+(?:\.\d+)?)\s*$/m;
+
+export function chartScale(chartData: string): number {
+	const zoom = Number(chartData.match(zoomRegex)?.[1]);
+	return zoom > 0 ? zoom : DEFAULT_SCALE;
+}
+
 export class PuppeteerMermaidRenderer implements MermaidRenderer {
+	readonly pixelRatio = DEFAULT_SCALE;
+
 	async captureMermaidCharts(charts: ChartData[]): Promise<Map<string, Buffer>> {
 		const capturedCharts = new Map<string, Buffer>();
 
@@ -78,14 +94,12 @@ export class PuppeteerMermaidRenderer implements MermaidRenderer {
 					mermaidConfig,
 				);
 
-				const scaledDiagram = chart.data.includes('erDiagram')
-						|| chart.data.includes('flowchart')
-						|| chart.data.includes('sequenceDiagram')
-						|| chart.data.includes('%% zoom');
-				const scale = scaledDiagram ? 2 : 1;
+				// Scale via pixel density, which works for every diagram type.
+				// Enlarging the viewport only works for SVGs that grow with it.
 				await page.setViewport({
-					width: scale * result.width,
-					height: scale * result.height,
+					width: result.width,
+					height: result.height,
+					deviceScaleFactor: chartScale(chart.data),
 				});
 				const imageBuffer = Buffer.from(await page.screenshot());
 				capturedCharts.set(chart.name, imageBuffer);

@@ -85,7 +85,16 @@ describe("adfEqual ignores Confluence server-side canonicalisation", () => {
 		});
 		const generated = media({ layout: "center" });
 		const fromServer = media({ layout: "center", width: 76.5, widthType: "percentage" });
-		expect(adfEqual(generated, fromServer)).toBe(true);
+		expect(adfEqual(fromServer, generated)).toBe(true);
+	});
+
+	test("a generated mediaSingle width equal to the stored one is equal", () => {
+		const media = (attrs: Record<string, unknown>): ADFEntity => ({
+			type: "doc",
+			content: [{ type: "mediaSingle", attrs, content: [] }],
+		});
+		const attrs = { layout: "center", width: 586, widthType: "pixel" };
+		expect(adfEqual(media(attrs), media({ ...attrs }))).toBe(true);
 	});
 
 	test("server-inserted macroId and schemaVersion in macroMetadata are ignored", () => {
@@ -115,6 +124,18 @@ describe("adfEqual still detects real differences", () => {
 	test("links to different pages are not equal", () => {
 		const other = "https://example.atlassian.net/wiki/spaces/VT/pages/99999999";
 		expect(adfEqual(docWithLink(BASE), docWithLink(other))).toBe(false);
+	});
+
+	test("a generated mediaSingle width that differs from the stored one is a difference", () => {
+		const media = (attrs: Record<string, unknown>): ADFEntity => ({
+			type: "doc",
+			content: [{ type: "mediaSingle", attrs, content: [] }],
+		});
+		const fromServer = media({ layout: "center", width: 1172, widthType: "pixel" });
+		const generated = media({ layout: "center", width: 586, widthType: "pixel" });
+		expect(adfEqual(fromServer, generated)).toBe(false);
+		// A page without a width yet must also pick up the generated one.
+		expect(adfEqual(media({ layout: "center" }), generated)).toBe(false);
 	});
 
 	test("a changed or removed anchor is still a difference", () => {

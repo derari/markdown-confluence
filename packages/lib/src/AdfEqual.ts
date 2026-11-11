@@ -59,7 +59,7 @@ function stripConfluencePageTitle(href: string): string {
 //  - strips the page-title slug from Confluence page links and inline cards
 //  - fills in the default table `layout` that Confluence adds server-side
 //  - drops server-assigned attrs the generator cannot predict (attrs.localId,
-//    macroId/schemaVersion inside macro metadata, mediaSingle width/widthType)
+//    macroId/schemaVersion inside macro metadata)
 function normalizeAdf(adf: ADFEntity) {
 	return traverse(adf, {
 		any: (node, __parent) => {
@@ -83,12 +83,6 @@ function normalizeAdf(adf: ADFEntity) {
 			}
 			if (node.type === "table") {
 				node.attrs = { layout: "default", ...(node.attrs ?? {}) };
-			}
-			if (node.type === "mediaSingle" && node.attrs) {
-				// Confluence inserts width/widthType on mediaSingle; the generator
-				// cannot predict them, so ignore both.
-				delete node.attrs["width"];
-				delete node.attrs["widthType"];
 			}
 			if (node.attrs) {
 				// localId is assigned by Confluence and cannot be predicted.
@@ -122,6 +116,22 @@ function ignoreDroppedAnchor(current: unknown, generated: unknown, path: string)
 	);
 }
 
+// Confluence fills in width/widthType (e.g. on mediaSingle) when the generated
+// ADF leaves them out. Ignore such a server default, but compare a width the
+// generator does set, so a changed display size still updates the page.
+const serverWidthPathRegex = /\.attrs\.(?:width|widthType)$/;
+
+function ignoreServerWidth(current: unknown, generated: unknown, path: string): boolean {
+	return generated === undefined && current !== undefined && serverWidthPathRegex.test(path);
+}
+
+function treatAsEqual(current: unknown, generated: unknown, path: string): boolean {
+	return (
+		ignoreDroppedAnchor(current, generated, path) ||
+		ignoreServerWidth(current, generated, path)
+	);
+}
+
 function cloneAdf(adf: ADFEntity): ADFEntity {
 	return JSON.parse(JSON.stringify(adf));
 }
@@ -132,7 +142,7 @@ export function adfEqual(first: ADFEntity, second: ADFEntity): boolean {
 	const a = normalizeAdf(cloneAdf(first));
 	const b = normalizeAdf(cloneAdf(second));
 	const mismatches: Mismatch[] = [];
-	const equal = isEqual(a, b, mismatches, "$", ignoreDroppedAnchor);
+	const equal = isEqual(a, b, mismatches, "$", treatAsEqual);
 	// Debug: use native console.log (this is a plain function, not an Effect, so
 	// effect's Console.log would build an Effect that never runs). Logs the
 	// NORMALISED ADF that is actually compared, so a diff reveals the mismatch.
