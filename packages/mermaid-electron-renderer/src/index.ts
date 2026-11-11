@@ -27,6 +27,9 @@ registerBpmnIconPacks(iconPacks);
 
 const pluginMermaidConfig: MermaidConfig = {
 	theme: "base",
+	// Some shapes are drawn with rough.js; seed 0 (the default) is random, so
+	// every render differs slightly and the image is re-uploaded each sync.
+	handDrawnSeed: 1,
 	themeVariables: {
 		background: "#ffffff",
 		mainBkg: "#ddebff",
